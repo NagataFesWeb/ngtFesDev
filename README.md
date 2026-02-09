@@ -89,3 +89,89 @@ npm run dev
     *   整理券（ファストパス）の取得
     *   企画への投票（部門ごとに1票）
     *   長田検定クイズ
+
+## 🌳 ブランチ命名規則 (Branch Naming Convention)
+
+開発をスムーズに進めるため、以下の命名規則に従ってブランチを作成してください。
+
+| プレフィックス | 説明 | 例 |
+| :--- | :--- | :--- |
+| `feature/` | 新機能の開発 | `feature/add-login-page`, `feature/user-profile` |
+| `fix/` | バグ修正 | `fix/header-layout`, `fix/login-error` |
+| `hotfix/` | 緊急のバグ修正（本番環境など） | `hotfix/critical-security-patch` |
+| `refactor/` | リファクタリング（機能追加・修正なし） | `refactor/api-client`, `refactor/cleanup-components` |
+| `docs/` | ドキュメントのみの変更 | `docs/update-readme`, `docs/api-spec` |
+| `test/` | テストの追加・修正 | `test/add-unit-tests`, `test/e2e-login-flow` |
+
+### 📌 その他のルール
+*   **英語小文字**を使用してください。
+*   単語の区切りは**ハイフン (`-`)** を使用してください。
+*   わかりやすい名前をつけてください（`feature/test` などは避ける）。
+
+## 🔰 GitHub 初心者向けワークフロー (Git Workflow for Beginners)
+
+開発の流れをステップごとに説明します。
+
+### 💻 コマンドラインで行う場合 (CLI)
+
+1. **リポジトリの取得 (Clone)**
+   ```bash
+   git clone <repository-url>
+   cd <project-folder>
+   ```
+
+2. **最新状態の取得 (Pull)**
+   作業を始める前に、必ずリモートの最新状態を取り込みます。
+   ```bash
+   git checkout main
+   git pull origin main
+   ```
+
+3. **ブランチの作成 (Create Branch)**
+   上記の命名規則に従ってブランチを作成し、移動します。
+   ```bash
+   git checkout -b feature/my-new-feature
+   ```
+
+4. **変更のコミット (Commit)**
+   作業が一区切りついたら、変更を保存します。
+   ```bash
+   git add .
+   git commit -m "機能XXを追加しました"
+   ```
+   *   コミットメッセージはわかりやすく書きましょう。
+
+5. **リモートへ送信 (Push)**
+   ```bash
+   git push origin feature/my-new-feature
+   ```
+
+6. **プルリクエストの作成 (Create Pull Request)**
+   GitHub上で "Compare & pull request" ボタンを押し、変更内容の説明を書いてPRを作成します。
+   *   レビュアーを指定し、確認・承認をもらってからマージします。
+
+### 🎨 VS Codeを使用する場合 (Using VS Code)
+
+VS Codeの標準機能を使って、GUIでGit操作を行うこともできます。
+
+1. **リポジトリの取得**
+   *   `F1`キーを押してコマンドパレットを開き、`Git: Clone` と入力して選択します。
+   *   リポジトリのURLを入力し、保存先フォルダを選択します。
+
+2. **ブランチの作成・切り替え**
+   *   左下のステータスバーにあるブランチ名（`main` など）をクリックします。
+   *   「新しいブランチの作成... (Create new branch...)」を選択し、ブランチ名を入力します（例: `feature/my-new-feature`）。
+
+3. **変更の確認とコミット**
+   *   左側のサイドバーにある **ソース管理 (Source Control)** アイコン（枝分かれした線のようなアイコン）をクリックします。
+   *   **変更 (Changes)** リストにあるファイルの `+` ボタンを押して、変更をステージング（`git add` に相当）します。
+   *   テキストボックスにコミットメッセージを入力し、**コミット (Commit)** ボタンを押します。
+
+4. **変更の同期 (Push/Pull)**
+   *   左下のステータスバーにある「変更の同期 (Synchronize Changes)」アイコン（回転する矢印）をクリックすると、PushとPullが同時に行われます。
+   *   初回Push時は、「このブランチを公開しますか？」と聞かれるので「OK」を選択します。
+
+### ⚠️ 注意点 (Important Notes)
+*   **mainブランチに直接pushしない**: 必ずブランチを切って作業してください。
+*   **こまめにPullする**: 他の人の変更を取り込むため、`git pull origin main` (自分のブランチにマージする場合) を定期的に行いましょう。
+*   **機密情報をcommitしない**: APIキーやパスワードなどは `.env` ファイルに記述し、`.gitignore` に含まれていることを確認してください。
