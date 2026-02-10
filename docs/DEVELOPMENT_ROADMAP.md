@@ -34,7 +34,6 @@
 - [x] `classes` テーブル (運営クラス)
 - [x] `projects` テーブル (企画情報)
 - [x] `congestion` テーブル (混雑状況)
-- [x] `votes` テーブル (投票)
 - [x] `fastpass_slots` テーブル (FP時間枠)
 - [x] `fastpass_tickets` テーブル (FPチケット)
 - [x] `quiz_sessions` テーブル (クイズセッション)
@@ -58,16 +57,12 @@
 - [x] **ファストパス関連**:
     - [x] `issue_fastpass_ticket`: トランザクション・排他制御付き発券
     - [x] `verify_and_use_ticket`: QRコード検証・消込
-- [x] **投票関連**:
-    - [x] `cast_vote`: カテゴリ重複チェック付き投票
 - [x] **クイズ関連**:
     - [x] `start_quiz_session`: ランダム出題・セッション開始
     - [x] `submit_quiz_score`: 採点・スコア登録
 - [x] **運営・管理関連**:
-    - [x] `operator_update_congestion`: レート制限付き混雑度更新
-    - [x] `admin_update_congestion`: 強制更新
+    - [x] `admin_update_congestion`: 強制更新（混雑状況更新の唯一のRPC）
     - [x] `admin_reset_all_data`: データ初期化
-    - [x] `admin_get_vote_summary`: 集計取得
 
 ### 2.4 シードデータ投入
 - [x] テスト用クラス (`classes`) データ
@@ -105,7 +100,6 @@
 
 ### 4.2 企画詳細・アクション (`/projects/[id]`)
 - [x] **詳細表示**: 画像, 説明, 現在の混雑度
-- [x] **投票ボタン**: `cast_vote` RPC 呼び出し
 - [x] **整理券取得**: `issue_fastpass_ticket` RPC 呼び出し
 
 ### 4.3 マイページ・LINE認証 (`/mypage`, `/login/callback`)
@@ -134,14 +128,12 @@
 ### 5.1 運営者用機能 (`/operator/*`)
 - [x] **運営者ログイン**: クラスID/Passによる認証 (`operator_login`)
 - [x] **ダッシュボード**:
-    - [x] **混雑状況更新**: ボタンひとつで変更 -> Realtime反映
     - [x] **QR読み取り**: カメラ起動or手動入力 -> `verify_and_use_ticket` RPC
     - [x] 成功/失敗のフィードバックUI
 
 ### 5.2 管理者用機能 (`/admin/*`)
 - [x] **管理者ログイン**: Email/Pass認証
 - [x] **ダッシュボード**:
-    - [x] **全投票集計**: ランキング・統計表示
     - [x] **データリセット**: 開発用/当日リセット用 (`admin_reset_all_data`)
     - [x] **緊急操作**: 任意の企画の混雑度変更 (Impl in RPC, UI TBD/Optional - *Implemented manual reset, chaos mode reserved*)
 
@@ -156,10 +148,9 @@
     - [ ] 本番環境でのRealtime動作
     - [ ] 実機でのQR読み取りテスト
 - [ ] **シナリオテスト (Visitor)**:
-    - [ ] LINEログイン -> 詳細ページ -> 投票 -> FP発券 -> マイページで確認
+    - [ ] LINEログイン -> 詳細ページ -> FP発券 -> マイページで確認
     - [ ] クイズプレイ -> ランキング反映
 - [ ] **シナリオテスト (Operator)**:
-    - [ ] ログイン -> 混雑度更新 -> Visitor側で即時反映確認 (Realtime)
     - [ ] QR読取 -> 入場判定成功
 - [ ] **シナリオテスト (Admin)**:
     - [ ] 全データリセット -> 正常にクリアされるか
@@ -172,4 +163,3 @@
 - [ ] 環境変数の本番設定
 - [ ] Vercel へのデプロイ
 - [ ] LINE Login Developer Console の Callback URL 設定変更
-
