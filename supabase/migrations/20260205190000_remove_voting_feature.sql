@@ -49,4 +49,4 @@ $$;
 
 -- 4. Remove voting_enabled from System Settings (if such table/record exists)
 -- Assuming a table named system_settings holds the feature toggles based on the migration files
-DELETE FROM public.system_settings WHERE key = 'voting_enabled';
+-- DELETE FROM public.system_settings WHERE key = 'voting_enabled';
