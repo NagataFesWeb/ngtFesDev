@@ -81,46 +81,7 @@ export interface Database {
                     created_at?: string
                 }
             }
-            congestion: {
-                Row: {
-                    project_id: string
-                    level: number
-                    updated_at: string
-                }
-                Insert: {
-                    project_id: string
-                    level?: number
-                    updated_at?: string
-                }
-                Update: {
-                    project_id?: string
-                    level?: number
-                    updated_at?: string
-                }
-            }
-            votes: {
-                Row: {
-                    vote_id: string
-                    user_id: string | null
-                    project_id: string | null
-                    category: 'class' | 'food' | 'stage' | 'exhibition' | null
-                    created_at: string
-                }
-                Insert: {
-                    vote_id?: string
-                    user_id?: string | null
-                    project_id?: string | null
-                    category?: 'class' | 'food' | 'stage' | 'exhibition' | null
-                    created_at?: string
-                }
-                Update: {
-                    vote_id?: string
-                    user_id?: string | null
-                    project_id?: string | null
-                    category?: 'class' | 'food' | 'stage' | 'exhibition' | null
-                    created_at?: string
-                }
-            }
+
             fastpass_slots: {
                 Row: {
                     slot_id: string
@@ -273,10 +234,6 @@ export interface Database {
                 Args: { p_qr_token: string; p_operator_token: string }
                 Returns: Json
             }
-            cast_vote: {
-                Args: { p_project_id: string; p_category: string }
-                Returns: Json
-            }
             operator_update_congestion: {
                 Args: { p_operator_token: string; p_level: number }
                 Returns: Json
@@ -287,10 +244,6 @@ export interface Database {
             }
             admin_reset_all_data: {
                 Args: { p_target_table: string; p_confirmation: string }
-                Returns: Json
-            }
-            admin_get_vote_summary: {
-                Args: Record<string, never>
                 Returns: Json
             }
             start_quiz_session: {
