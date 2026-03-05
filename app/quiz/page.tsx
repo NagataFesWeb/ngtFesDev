@@ -1,123 +1,133 @@
 'use client'
 
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trophy, Play } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { useSystemSettings } from '@/hooks/useSystemSettings'
-import { AlertTriangle, Lock } from 'lucide-react'
-
 import { useRouter } from 'next/navigation'
-import { useSession } from '@/contexts/SessionContext'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Loader2, Trophy, PlayCircle, Star, Award, Medal } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
-export default function QuizTopPage() {
-    const { settings: systemSettings, loading: settingsLoading } = useSystemSettings()
-    const { session, loading: sessionLoading } = useSession()
+export default function QuizDashboardPage() {
     const router = useRouter()
-
-    useEffect(() => {
-        if (!sessionLoading && !session) {
-            router.push('/login?redirect=/quiz')
-        }
-    }, [session, sessionLoading, router])
-
-    if (sessionLoading) return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner /></div>
-    if (!session) return null // Redirecting...
-
-    return (
-        <div className="container py-12 flex flex-col items-center justify-center min-h-[calc(100vh-3.5rem)] text-center">
-            <div className="mb-8 space-y-4">
-                <div className="mx-auto w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <Trophy className="w-10 h-10 text-yellow-600" />
-                </div>
-                <h1 className="text-4xl font-bold tracking-tight">長田検定</h1>
-                <p className="text-xl text-muted-foreground max-w-md mx-auto">
-                    長田高校にまつわるクイズに挑戦しよう！<br />
-                    あなたの長田愛が試される...
-                </p>
-            </div>
-
-            <Card className="w-full max-w-md mb-8">
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-center">
-                        <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
-                        現在のランキング (Top 10)
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <QuizRankingList />
-                </CardContent>
-            </Card>
-
-            <Card className="w-full max-w-md mb-8">
-                <CardHeader>
-                    <CardTitle>ルール</CardTitle>
-                </CardHeader>
-                <CardContent className="text-left space-y-2">
-                    <p>1. 全5問のクイズが出題されます。</p>
-                    <p>2. 正解すると10ポイント獲得。</p>
-                    <p>3. 何度でも挑戦できます。</p>
-                    <p>4. ハイスコアはランキングに反映されます。</p>
-                </CardContent>
-            </Card>
-
-            {systemSettings.quiz_enabled ? (
-                <Link href="/quiz/play">
-                    <Button size="lg" className="h-16 px-12 text-xl shadow-lg animate-pulse">
-                        <Play className="mr-2 h-6 w-6" /> クイズを始める
-                    </Button>
-                </Link>
-            ) : (
-                <div className="flex flex-col items-center gap-2">
-                    <Button size="lg" className="h-16 px-12 text-xl" disabled>
-                        <Lock className="mr-2 h-6 w-6" /> 現在利用できません
-                    </Button>
-                    <p className="text-sm text-muted-foreground">管理者の設定により停止中です</p>
-                </div>
-            )}
-        </div>
-    )
-}
-
-const QuizRankingList = () => {
-    const [ranking, setRanking] = useState<{ display_name: string, highest_score: number, total_score: number }[]>([])
     const [loading, setLoading] = useState(true)
+    const [stats, setStats] = useState<{
+        total_score: number
+        highest_score: number
+        play_count: number
+    } | null>(null)
 
     useEffect(() => {
-        const fetchRanking = async () => {
-            const { data } = await supabase.rpc('get_quiz_ranking')
-            if (data) {
-                setRanking(data as any)
+        const fetchStats = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) {
+                router.push('/login?redirect=/quiz')
+                return
+            }
+
+            const { data, error } = await supabase
+                .from('quiz_scores')
+                .select('total_score, highest_score, play_count')
+                .eq('user_id', session.user.id)
+                .single()
+
+            if (!error && data) {
+                setStats(data as any)
+            } else {
+                // Return 0s if no record exists yet
+                setStats({ total_score: 0, highest_score: 0, play_count: 0 })
             }
             setLoading(false)
         }
-        fetchRanking()
-    }, [])
 
-    if (loading) return <div className="text-center py-4">読み込み中...</div>
-    if (ranking.length === 0) return <div className="text-center py-4 text-muted-foreground">ランキングデータがありません</div>
+        fetchStats()
+    }, [router])
+
+    if (loading) {
+        return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+    }
+
+    const { total_score = 0, highest_score = 0, play_count = 0 } = stats || {}
+
+    // 称号判定ロジック
+    const getRank = (score: number) => {
+        if (score >= 100) return { name: 'マスター', color: 'text-yellow-500', icon: Trophy }
+        if (score >= 60) return { name: 'ゴールド', color: 'text-amber-500', icon: Award }
+        if (score >= 30) return { name: 'シルバー', color: 'text-slate-400', icon: Medal }
+        if (score >= 10) return { name: 'ブロンズ', color: 'text-orange-700', icon: Star }
+        return { name: 'ビギナー', color: 'text-muted-foreground', icon: Star }
+    }
+
+    const rank = getRank(total_score)
+    const RankIcon = rank.icon
 
     return (
-        <ul className="space-y-2">
-            <li className="flex justify-between text-xs text-muted-foreground border-b pb-1 px-2">
-                <span className="w-8">順位</span>
-                <span className="flex-1">名前</span>
-                <span className="w-16 text-right">合計</span>
-                <span className="w-16 text-right">最高</span>
-            </li>
-            {ranking.map((item, index) => (
-                <li key={index} className="flex justify-between items-center text-sm border-b py-2 last:border-0">
-                    <span className={`font-bold w-8 text-left ${index < 3 ? 'text-primary' : 'text-muted-foreground'}`}>
-                        #{index + 1}
-                    </span>
-                    <span className="flex-1 text-left truncate px-2">{item.display_name || 'No Name'}</span>
-                    <span className="w-16 text-right font-mono font-bold text-primary">{item.total_score}pt</span>
-                    <span className="w-16 text-right font-mono text-muted-foreground text-xs">{item.highest_score}pt</span>
-                </li>
-            ))}
-        </ul>
+        <div className="container max-w-2xl py-8 space-y-6">
+            <div className="text-center space-y-2">
+                <h1 className="text-3xl font-bold tracking-tight">長田検定</h1>
+                <p className="text-muted-foreground">長田高校に関するクイズに挑戦して、あなたの知識を深めましょう！</p>
+            </div>
+
+            <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="text-center pb-2">
+                    <CardTitle className="text-xl">あなたの現在の称号</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center space-y-4">
+                    <div className={`p-4 rounded-full bg-background shadow-md ${rank.color}`}>
+                        <RankIcon className="w-16 h-16" />
+                    </div>
+                    <h2 className={`text-3xl font-black ${rank.color}`}>{rank.name}</h2>
+                    <p className="text-sm font-medium">
+                        累計正解数: <span className="text-xl mx-1">{total_score}</span> 問
+                    </p>
+
+                    {/* 次の称号へのプログレス (簡易) */}
+                    {total_score < 100 && (
+                        <p className="text-xs text-muted-foreground">
+                            次の称号まであと {
+                                total_score < 10 ? 10 - total_score :
+                                    total_score < 30 ? 30 - total_score :
+                                        total_score < 60 ? 60 - total_score :
+                                            100 - total_score
+                            } 問
+                        </p>
+                    )}
+                </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-2 gap-4">
+                <Card>
+                    <CardHeader className="py-4">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">最高スコア (1回)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{highest_score} / 10</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="py-4">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">プレイ回数</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{play_count} 回</div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="flex flex-col gap-4 mt-8 pt-4">
+                <Button
+                    size="lg"
+                    className="w-full text-lg h-16 font-bold"
+                    onClick={() => router.push('/quiz/play')}
+                >
+                    <PlayCircle className="w-6 h-6 mr-2" />
+                    クイズに挑戦する (全10問)
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                    ※ 1回につきランダムに10問出題されます。<br />
+                    ※ スコアの登録は1分に1回のみ可能です。
+                </p>
+            </div>
+        </div>
     )
 }
