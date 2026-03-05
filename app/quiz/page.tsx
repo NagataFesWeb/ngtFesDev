@@ -21,7 +21,14 @@ export default function QuizDashboardPage() {
         highest_score: number
         play_count: number
     }[] | null>(null)
+    const [rewards, setRewards] = useState<{
+        id: number
+        required_score: number
+        title_name: string
+        storage_path: string
+    }[] | null>(null)
     const [isEnabled, setIsEnabled] = useState<boolean>(true)
+    const [downloadingId, setDownloadingId] = useState<number | null>(null)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -37,10 +44,17 @@ export default function QuizDashboardPage() {
                 setIsEnabled(s.value === true || s.value === 'true')
             }
 
-            // 2. Fetch Ranking (Parallel-ish)
-            const { data: rankingData, error: rankingError } = await supabase.rpc('get_quiz_ranking')
-            if (!rankingError && rankingData) {
-                setRanking(rankingData as any)
+            // 2. Fetch Ranking & Rewards
+            const [rankingRes, rewardsRes] = await Promise.all([
+                (supabase.rpc('get_quiz_ranking') as unknown) as Promise<any>,
+                (supabase.from('quiz_rewards').select('*').order('required_score', { ascending: true }) as unknown) as Promise<any>
+            ])
+
+            if (!rankingRes.error && rankingRes.data) {
+                setRanking(rankingRes.data)
+            }
+            if (!rewardsRes.error && rewardsRes.data) {
+                setRewards(rewardsRes.data)
             }
 
             // 3. Fetch Stats
@@ -109,6 +123,40 @@ export default function QuizDashboardPage() {
     const rank = getRank(total_score)
     const RankIcon = rank.icon
 
+    const handleDownload = async (rewardId: number) => {
+        try {
+            setDownloadingId(rewardId)
+            const { data, error } = await (supabase.rpc as any)('get_quiz_reward_url', { p_reward_id: rewardId })
+
+            if (error || !data || (data as any[]).length === 0) {
+                console.error('RPC Error or No Data:', error, data)
+                throw new Error('未達成またはエラーが発生しました')
+            }
+
+            const { signed_url: path } = data[0] as any
+            console.log('Attempting to download path:', path)
+
+            // 2. Create Signed URL from Storage
+            const { data: signData, error: signError } = await supabase.storage
+                .from('quiz-rewards')
+                .createSignedUrl(path, 3600)
+
+            if (signError || !signData) throw signError
+
+            // 3. Trigger Download
+            const link = document.createElement('a')
+            link.href = signData.signedUrl
+            link.download = path.split('/').pop() || 'wallpaper.png'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+        } catch (err: any) {
+            alert(err.message || 'ダウンロードに失敗しました')
+        } finally {
+            setDownloadingId(null)
+        }
+    }
+
     return (
         <div className="container max-w-2xl py-8 space-y-6">
             <div className="text-center space-y-2">
@@ -176,6 +224,59 @@ export default function QuizDashboardPage() {
                                         <div className="text-right">
                                             <span className="text-xl font-black">{row.total_score ?? 0}</span>
                                             <span className="ml-1 text-xs text-muted-foreground font-bold">問</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* 報酬セクション */}
+            {rewards && rewards.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-2">
+                        <Award className="w-5 h-5 text-primary" />
+                        <h2 className="text-xl font-bold">称号報酬（壁紙）</h2>
+                    </div>
+                    <div className="grid gap-3">
+                        {rewards.map((reward) => {
+                            const isUnlocked = total_score >= reward.required_score
+                            const rewardRank = getRank(reward.required_score)
+                            const RewardIcon = rewardRank.icon
+
+                            return (
+                                <Card key={reward.id} className={!isUnlocked ? "opacity-60 grayscale" : "border-primary/30"}>
+                                    <CardContent className="flex items-center p-4">
+                                        <div className={`mr-4 p-2 rounded-full bg-background shadow-sm ${rewardRank.color}`}>
+                                            <RewardIcon className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold">{reward.title_name} 壁紙</p>
+                                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                                                必要: {reward.required_score}問
+                                            </p>
+                                        </div>
+                                        <div>
+                                            {isUnlocked ? (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleDownload(reward.id)}
+                                                    disabled={downloadingId === reward.id}
+                                                >
+                                                    {downloadingId === reward.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        'ダウンロード'
+                                                    )}
+                                                </Button>
+                                            ) : (
+                                                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+                                                    未達成
+                                                </span>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>
