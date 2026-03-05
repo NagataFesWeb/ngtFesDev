@@ -31,6 +31,7 @@ export interface Database {
                     role?: 'guest' | 'admin'
                     created_at?: string
                 }
+                Relationships: []
             }
             classes: {
                 Row: {
@@ -48,6 +49,7 @@ export interface Database {
                     class_name?: string
                     password_hash?: string
                 }
+                Relationships: []
             }
             projects: {
                 Row: {
@@ -58,6 +60,8 @@ export interface Database {
                     description: string | null
                     image_url: string | null
                     fastpass_enabled: boolean | null
+                    rotation_time_min: number
+                    max_queue_size: number
                     created_at: string
                 }
                 Insert: {
@@ -68,6 +72,8 @@ export interface Database {
                     description?: string | null
                     image_url?: string | null
                     fastpass_enabled?: boolean | null
+                    rotation_time_min?: number
+                    max_queue_size?: number
                     created_at?: string
                 }
                 Update: {
@@ -78,8 +84,18 @@ export interface Database {
                     description?: string | null
                     image_url?: string | null
                     fastpass_enabled?: boolean | null
+                    rotation_time_min?: number
+                    max_queue_size?: number
                     created_at?: string
                 }
+                Relationships: [
+                    {
+                        foreignKeyName: "projects_class_id_fkey"
+                        columns: ["class_id"]
+                        referencedRelation: "classes"
+                        referencedColumns: ["class_id"]
+                    }
+                ]
             }
             congestion: {
                 Row: {
@@ -97,29 +113,14 @@ export interface Database {
                     level?: number
                     updated_at?: string
                 }
-            }
-            votes: {
-                Row: {
-                    vote_id: string
-                    user_id: string | null
-                    project_id: string | null
-                    category: 'class' | 'food' | 'stage' | 'exhibition' | null
-                    created_at: string
-                }
-                Insert: {
-                    vote_id?: string
-                    user_id?: string | null
-                    project_id?: string | null
-                    category?: 'class' | 'food' | 'stage' | 'exhibition' | null
-                    created_at?: string
-                }
-                Update: {
-                    vote_id?: string
-                    user_id?: string | null
-                    project_id?: string | null
-                    category?: 'class' | 'food' | 'stage' | 'exhibition' | null
-                    created_at?: string
-                }
+                Relationships: [
+                    {
+                        foreignKeyName: "congestion_project_id_fkey"
+                        columns: ["project_id"]
+                        referencedRelation: "projects"
+                        referencedColumns: ["project_id"]
+                    }
+                ]
             }
             fastpass_slots: {
                 Row: {
@@ -143,6 +144,14 @@ export interface Database {
                     end_time?: string
                     capacity?: number | null
                 }
+                Relationships: [
+                    {
+                        foreignKeyName: "fastpass_slots_project_id_fkey"
+                        columns: ["project_id"]
+                        referencedRelation: "projects"
+                        referencedColumns: ["project_id"]
+                    }
+                ]
             }
             fastpass_tickets: {
                 Row: {
@@ -169,6 +178,20 @@ export interface Database {
                     used?: boolean | null
                     issued_at?: string
                 }
+                Relationships: [
+                    {
+                        foreignKeyName: "fastpass_tickets_slot_id_fkey"
+                        columns: ["slot_id"]
+                        referencedRelation: "fastpass_slots"
+                        referencedColumns: ["slot_id"]
+                    },
+                    {
+                        foreignKeyName: "fastpass_tickets_user_id_fkey"
+                        columns: ["user_id"]
+                        referencedRelation: "users"
+                        referencedColumns: ["user_id"]
+                    }
+                ]
             }
             quiz_questions: {
                 Row: {
@@ -189,6 +212,7 @@ export interface Database {
                     choices?: Json
                     correct_choice_index?: number
                 }
+                Relationships: []
             }
             quiz_sessions: {
                 Row: {
@@ -212,6 +236,7 @@ export interface Database {
                     correct_answers?: Json
                     expires_at?: string
                 }
+                Relationships: []
             }
             quiz_scores: {
                 Row: {
@@ -235,6 +260,7 @@ export interface Database {
                     play_count?: number | null
                     updated_at?: string
                 }
+                Relationships: []
             }
             operation_logs: {
                 Row: {
@@ -258,11 +284,71 @@ export interface Database {
                     details?: Json | null
                     performed_at?: string
                 }
+                Relationships: []
             }
+            system_settings: {
+                Row: {
+                    key: string
+                    value: Json
+                    description: string | null
+                    updated_at: string
+                }
+                Insert: {
+                    key: string
+                    value: Json
+                    description?: string | null
+                    updated_at?: string
+                }
+                Update: {
+                    key?: string
+                    value?: Json
+                    description?: string | null
+                    updated_at?: string
+                }
+                Relationships: []
+            }
+            news: {
+                Row: {
+                    news_id: string
+                    content: string
+                    is_important: boolean
+                    is_active: boolean
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    news_id?: string
+                    content: string
+                    is_important?: boolean
+                    is_active?: boolean
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    news_id?: string
+                    content?: string
+                    is_important?: boolean
+                    is_active?: boolean
+                    created_at?: string
+                    updated_at?: string
+                }
+                Relationships: []
+            }
+        }
+        Views: {
+            [_: string]: never
         }
         Functions: {
             operator_login: {
                 Args: { p_class_id: string; p_password: string }
+                Returns: Json
+            }
+            operator_update_project: {
+                Args: { p_operator_token: string; p_description: string; p_image_url: string }
+                Returns: Json
+            }
+            operator_update_congestion: {
+                Args: { p_operator_token: string; p_level: number }
                 Returns: Json
             }
             issue_fastpass_ticket: {
@@ -273,13 +359,35 @@ export interface Database {
                 Args: { p_qr_token: string; p_operator_token: string }
                 Returns: Json
             }
-            cast_vote: {
-                Args: { p_project_id: string; p_category: string }
+            submit_quiz_score: {
+                Args: { p_answers: Json }
                 Returns: Json
             }
-            operator_update_congestion: {
-                Args: { p_operator_token: string; p_level: number }
-                Returns: Json
+            get_quiz_ranking: {
+                Args: Record<string, never>
+                Returns: {
+                    display_name: string
+                    highest_score: number
+                    total_score: number
+                }[]
+            }
+            get_estimated_wait_time: {
+                Args: { p_project_id: string }
+                Returns: number
+            }
+            get_projects_with_status: {
+                Args: Record<string, never>
+                Returns: {
+                    project_id: string
+                    class_id: string
+                    type: string
+                    title: string
+                    description: string
+                    image_url: string
+                    fastpass_enabled: boolean
+                    congestion_level: number
+                    wait_time_min: number
+                }[]
             }
             admin_update_congestion: {
                 Args: { p_project_id: string; p_level: number }
@@ -289,33 +397,40 @@ export interface Database {
                 Args: { p_target_table: string; p_confirmation: string }
                 Returns: Json
             }
-            admin_get_vote_summary: {
-                Args: Record<string, never>
-                Returns: Json
-            }
-            start_quiz_session: {
-                Args: Record<string, never>
-                Returns: Json
-            }
-            submit_quiz_score: {
-                Args: { p_session_id: string; p_answers: Json }
-                Returns: Json
-            }
             admin_get_projects_status: {
                 Args: Record<string, never>
-                Returns: Json
+                Returns: {
+                    project_id: string
+                    title: string
+                    class_name: string
+                    congestion_level: number
+                    updated_at: string
+                }[]
             }
             admin_update_setting: {
-                Args: { p_key: string; p_value: boolean }
+                Args: { p_key: string; p_value: Json }
                 Returns: Json
             }
             admin_get_fastpass_projects: {
                 Args: Record<string, never>
-                Returns: Json
+                Returns: {
+                    project_id: string
+                    title: string
+                    class_name: string
+                    fastpass_enabled: boolean
+                    total_slots: number
+                    total_issued: number
+                }[]
             }
             admin_get_project_slots: {
                 Args: { p_project_id: string }
-                Returns: Json
+                Returns: {
+                    slot_id: string
+                    start_time: string
+                    end_time: string
+                    capacity: number
+                    issued_count: number
+                }[]
             }
             admin_update_slot_capacity: {
                 Args: { p_slot_id: string; p_capacity: number }
@@ -325,12 +440,11 @@ export interface Database {
                 Args: { p_project_id: string; p_enabled: boolean }
                 Returns: Json
             }
-            operator_update_project: {
-                Args: { p_operator_token: string; p_description: string; p_image_url: string }
-                Returns: Json
-            }
         }
         Enums: {
+            [_: string]: never
+        }
+        CompositeTypes: {
             [_: string]: never
         }
     }

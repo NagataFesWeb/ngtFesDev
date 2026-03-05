@@ -1,6 +1,7 @@
 -- Migration: Enforce Feature Toggles in RPCs
 -- Run this in Supabase Dashboard > SQL Editor
 
+/*
 -- 1. Update cast_vote to check 'voting_enabled'
 CREATE OR REPLACE FUNCTION public.cast_vote(p_project_id UUID, p_category TEXT)
 RETURNS JSONB
@@ -40,6 +41,7 @@ BEGIN
     RETURN jsonb_build_object('status', 'ok');
 END;
 $$;
+*/
 
 -- 2. Update issue_fastpass_ticket to check 'fastpass_enabled'
 CREATE OR REPLACE FUNCTION public.issue_fastpass_ticket(p_slot_id UUID)

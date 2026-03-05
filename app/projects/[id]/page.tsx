@@ -33,7 +33,6 @@ export default function ProjectDetailsPage() {
 
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [isVoting, setIsVoting] = useState(false)
     const [isIssuing, setIsIssuing] = useState(false)
     const [isFastPassModalOpen, setIsFastPassModalOpen] = useState(false)
 
@@ -63,7 +62,7 @@ export default function ProjectDetailsPage() {
                 if (congestionData) setCongestionLevel(congestionData.level)
 
                 // Fetch Estimated Wait Time
-                const { data: waitTimeData } = await supabase.rpc('get_estimated_wait_time' as any, {
+                const { data: waitTimeData } = await supabase.rpc('get_estimated_wait_time', {
                     p_project_id: id as string
                 })
                 if (waitTimeData !== null) setWaitTime(waitTimeData)
@@ -112,27 +111,6 @@ export default function ProjectDetailsPage() {
     }, [id])
 
     // Actions
-    const handleVote = async () => {
-        if (!session) {
-            router.push('/login?redirect=/projects/' + id)
-            return
-        }
-        if (!project) return
-
-        setIsVoting(true)
-        try {
-            const { error } = await supabase.rpc('cast_vote', {
-                p_project_id: project.project_id,
-                p_category: project.type || 'class' // strict matching required?
-            } as any)
-            if (error) throw error
-            toast.success('投票しました！')
-        } catch (err: any) {
-            toast.error('投票に失敗しました: ' + err.message)
-        } finally {
-            setIsVoting(false)
-        }
-    }
 
     const handleIssueFastPass = async (slotId: string) => {
         if (!session) {
@@ -144,7 +122,7 @@ export default function ProjectDetailsPage() {
         try {
             const { data, error } = await supabase.rpc('issue_fastpass_ticket', {
                 p_slot_id: slotId
-            } as any)
+            })
 
             if (error) throw error
 
@@ -213,15 +191,6 @@ export default function ProjectDetailsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {systemSettings.voting_enabled ? (
-                        <Button size="lg" className="w-full h-14 text-lg" onClick={handleVote} disabled={isVoting}>
-                            🏆 この企画に投票する
-                        </Button>
-                    ) : (
-                        <Button size="lg" className="w-full h-14 text-lg" disabled>
-                            <Lock className="mr-2 h-4 w-4" /> 投票受付停止中
-                        </Button>
-                    )}
 
                     {systemSettings.fastpass_enabled && project.fastpass_enabled && (
                         <Dialog open={isFastPassModalOpen} onOpenChange={setIsFastPassModalOpen}>
