@@ -15,6 +15,12 @@ export default function QuizDashboardPage() {
         highest_score: number
         play_count: number
     } | null>(null)
+    const [ranking, setRanking] = useState<{
+        display_name: string
+        total_score: number
+        highest_score: number
+        play_count: number
+    }[] | null>(null)
     const [isEnabled, setIsEnabled] = useState<boolean>(true)
 
     useEffect(() => {
@@ -31,7 +37,13 @@ export default function QuizDashboardPage() {
                 setIsEnabled(s.value === true || s.value === 'true')
             }
 
-            // 2. Fetch Stats
+            // 2. Fetch Ranking (Parallel-ish)
+            const { data: rankingData, error: rankingError } = await supabase.rpc('get_quiz_ranking')
+            if (!rankingError && rankingData) {
+                setRanking(rankingData as any)
+            }
+
+            // 3. Fetch Stats
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) {
                 router.push('/login?redirect=/quiz')
@@ -130,6 +142,48 @@ export default function QuizDashboardPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* ランキングセクション */}
+            {ranking && ranking.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-2">
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                        <h2 className="text-xl font-bold">ランキング（上位3名）</h2>
+                    </div>
+                    <div className="grid gap-3">
+                        {ranking.map((row, idx) => {
+                            const userRank = getRank(row.total_score)
+                            const UserRankIcon = userRank.icon
+
+                            return (
+                                <Card key={idx} className={idx === 0 ? "border-yellow-500/30 bg-yellow-50/50 dark:bg-yellow-900/10" : ""}>
+                                    <CardContent className="flex items-center p-4">
+                                        <div className="mr-3 flex items-center justify-center w-8 h-8 rounded-full font-black text-lg">
+                                            {idx === 0 && <span className="text-yellow-500">1</span>}
+                                            {idx === 1 && <span className="text-slate-400">2</span>}
+                                            {idx === 2 && <span className="text-amber-600">3</span>}
+                                        </div>
+                                        <div className={`mr-3 p-2 rounded-full bg-background shadow-sm ${userRank.color}`}>
+                                            <UserRankIcon className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold leading-tight">{row.display_name}</p>
+                                            <div className="flex gap-3 mt-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                                                <span>1回最高: <strong>{row.highest_score ?? 0}</strong></span>
+                                                <span>挑戦: <strong>{row.play_count ?? 0}</strong>回</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-xl font-black">{row.total_score ?? 0}</span>
+                                            <span className="ml-1 text-xs text-muted-foreground font-bold">問</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
                 <Card>
