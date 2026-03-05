@@ -1,21 +1,40 @@
--- Migration for users table to match specification in docs/開発者むけ/バックエンド仕様書.md
+-- Migration for users table (Supabase Auth ダミーメール運用方式)
 
--- Drop LINE login column if it exists
+-- 1. LINE login columnの削除
 ALTER TABLE public.users 
   DROP COLUMN IF EXISTS line_user_id;
 
--- Add new columns as nullable first
+-- 2. login_id カラムの追加 (password_hashはSupabase Authが担うため不要)
 ALTER TABLE public.users 
-  ADD COLUMN IF NOT EXISTS login_id TEXT UNIQUE,
-  ADD COLUMN IF NOT EXISTS password_hash TEXT;
+  ADD COLUMN IF NOT EXISTS login_id TEXT UNIQUE;
 
--- For existing records (if any), populate with dummy data to satisfy NOT NULL constraints
+-- 既存レコードへのダミーデータ投入 (NOT NULL制約のため)
 UPDATE public.users 
-  SET login_id = 'legacy_user_' || gen_random_uuid()::text,
-      password_hash = 'legacy_user_no_password'
+  SET login_id = 'legacy_user_' || gen_random_uuid()::text
   WHERE login_id IS NULL;
 
--- Enforce NOT NULL constraints
 ALTER TABLE public.users 
-  ALTER COLUMN login_id SET NOT NULL,
-  ALTER COLUMN password_hash SET NOT NULL;
+  ALTER COLUMN login_id SET NOT NULL;
+
+-- 3. auth.users 作成時のトリガー関数を更新
+-- ダミーメール(login_id@ngtfes.local) または raw_user_meta_data から login_id を抽出して public.users に挿入する
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+DECLARE
+  v_login_id TEXT;
+BEGIN
+  -- raw_user_meta_data から login_id を取得するか、email の @ より前を利用する
+  v_login_id := coalesce(
+    new.raw_user_meta_data->>'login_id',
+    split_part(new.email, '@', 1)
+  );
+
+  INSERT INTO public.users (user_id, login_id, display_name)
+  VALUES (
+    new.id, 
+    v_login_id,
+    coalesce(new.raw_user_meta_data->>'full_name', 'Guest')
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
