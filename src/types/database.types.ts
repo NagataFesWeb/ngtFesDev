@@ -31,6 +31,7 @@ export interface Database {
                     role?: 'guest' | 'admin'
                     created_at?: string
                 }
+                Relationships: []
             }
             classes: {
                 Row: {
@@ -48,6 +49,7 @@ export interface Database {
                     class_name?: string
                     password_hash?: string
                 }
+                Relationships: []
             }
             projects: {
                 Row: {
@@ -80,6 +82,7 @@ export interface Database {
                     fastpass_enabled?: boolean | null
                     created_at?: string
                 }
+                Relationships: []
             }
 
             fastpass_slots: {
@@ -104,6 +107,7 @@ export interface Database {
                     end_time?: string
                     capacity?: number | null
                 }
+                Relationships: []
             }
             fastpass_tickets: {
                 Row: {
@@ -130,6 +134,7 @@ export interface Database {
                     used?: boolean | null
                     issued_at?: string
                 }
+                Relationships: []
             }
             quiz_questions: {
                 Row: {
@@ -150,6 +155,7 @@ export interface Database {
                     choices?: Json
                     correct_choice_index?: number
                 }
+                Relationships: []
             }
             quiz_sessions: {
                 Row: {
@@ -173,6 +179,7 @@ export interface Database {
                     correct_answers?: Json
                     expires_at?: string
                 }
+                Relationships: []
             }
             quiz_scores: {
                 Row: {
@@ -196,6 +203,7 @@ export interface Database {
                     play_count?: number | null
                     updated_at?: string
                 }
+                Relationships: []
             }
             operation_logs: {
                 Row: {
@@ -219,7 +227,11 @@ export interface Database {
                     details?: Json | null
                     performed_at?: string
                 }
+                Relationships: []
             }
+        }
+        Views: {
+            [_: string]: never
         }
         Functions: {
             operator_login: {
@@ -282,8 +294,15 @@ export interface Database {
                 Args: { p_operator_token: string; p_description: string; p_image_url: string }
                 Returns: Json
             }
+            get_estimated_wait_time: {
+                Args: { p_project_id: string }
+                Returns: number
+            }
         }
         Enums: {
+            [_: string]: never
+        }
+        CompositeTypes: {
             [_: string]: never
         }
     }
