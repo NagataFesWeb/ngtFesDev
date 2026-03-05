@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Loader2, Trophy, PlayCircle, Star, Award, Medal } from 'lucide-react'
+import { Loader2, Trophy, PlayCircle, Star, Award, Medal, AlertCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 export default function QuizDashboardPage() {
@@ -15,9 +15,23 @@ export default function QuizDashboardPage() {
         highest_score: number
         play_count: number
     } | null>(null)
+    const [isEnabled, setIsEnabled] = useState<boolean>(true)
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchData = async () => {
+            // 1. Check Feature Toggle
+            const { data: settings, error: settingsError } = await supabase
+                .from('system_settings')
+                .select('value')
+                .eq('key', 'quiz_enabled')
+                .single()
+
+            if (!settingsError && settings) {
+                const s = settings as any
+                setIsEnabled(s.value === true || s.value === 'true')
+            }
+
+            // 2. Fetch Stats
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) {
                 router.push('/login?redirect=/quiz')
@@ -39,11 +53,34 @@ export default function QuizDashboardPage() {
             setLoading(false)
         }
 
-        fetchStats()
+        fetchData()
     }, [router])
 
     if (loading) {
         return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+    }
+
+    if (!isEnabled) {
+        return (
+            <div className="container max-w-2xl py-12">
+                <Card className="border-destructive/20 bg-destructive/5">
+                    <CardHeader className="text-center">
+                        <div className="flex justify-center mb-4">
+                            <AlertCircle className="h-12 w-12 text-destructive" />
+                        </div>
+                        <CardTitle className="text-2xl font-bold">現在この機能を利用できません</CardTitle>
+                        <CardDescription className="text-lg">
+                            長田検定は現在メンテナンス中か、公開期間外のためご利用いただけません。
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex justify-center pb-8">
+                        <Button variant="outline" onClick={() => router.push('/')}>
+                            ホームへ戻る
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
     }
 
     const { total_score = 0, highest_score = 0, play_count = 0 } = stats || {}

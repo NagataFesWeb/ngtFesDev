@@ -38,14 +38,28 @@ export default function QuizPlayPage() {
     useEffect(() => {
         const initQuiz = async () => {
             try {
-                // Must be logged in
+                // 1. Check Feature Toggle
+                const { data: settings, error: settingsError } = await supabase
+                    .from('system_settings')
+                    .select('value')
+                    .eq('key', 'quiz_enabled')
+                    .single()
+
+                const s = settings as any
+                if (settingsError || !settings || s.value === false || s.value === 'false') {
+                    toast.error('クイズ機能は現在停止されています')
+                    router.push('/quiz')
+                    return
+                }
+
+                // 2. Must be logged in
                 const { data: { session } } = await supabase.auth.getSession()
                 if (!session) {
                     router.push('/login?redirect=/quiz')
                     return
                 }
 
-                // Fetch 10 random questions from DB via RPC
+                // 3. Fetch 10 random questions from DB via RPC
                 const { data, error } = await supabase.rpc('get_quiz_questions')
                 if (error) throw error
 
