@@ -37,7 +37,7 @@ CREATE POLICY "Everyone can view system_settings"
 
 -- Insert default settings
 INSERT INTO public.system_settings (key, value, description) VALUES
-('voting_enabled', 'true'::jsonb, 'Enable or disable visitor voting'),
+-- ('voting_enabled', 'true'::jsonb, 'Enable or disable visitor voting'),
 ('quiz_enabled', 'true'::jsonb, 'Enable or disable quiz feature'),
 ('fastpass_enabled', 'true'::jsonb, 'Enable or disable fastpass issuance')
 ON CONFLICT (key) DO NOTHING;

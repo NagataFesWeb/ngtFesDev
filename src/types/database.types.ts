@@ -33,6 +33,23 @@ export interface Database {
                 }
                 Relationships: []
             }
+            congestion: {
+                Row: {
+                    project_id: string
+                    level: number
+                    updated_at: string
+                }
+                Insert: {
+                    project_id: string
+                    level?: number
+                    updated_at?: string
+                }
+                Update: {
+                    project_id?: string
+                    level?: number
+                    updated_at?: string
+                }
+            }
             classes: {
                 Row: {
                     class_id: string
