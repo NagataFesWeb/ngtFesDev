@@ -21,10 +21,25 @@ export async function POST(request: Request) {
             return NextResponse.json({ status: 400, message: 'Invalid score' }, { status: 400 })
         }
 
-        // Initialize Supabase client with the user's JWT
+        // Initialize Supabase client
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
         const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+        // Check if quiz is enabled
+        const { data: settings, error: settingsError } = await supabase
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'quiz_enabled')
+            .single()
+
+        const s = settings as any
+        if (settingsError || !settings || (s.value !== true && s.value !== 'true')) {
+            return NextResponse.json({ status: 403, message: 'Currently unavailable' }, { status: 403 })
+        }
+
+        // Create a new client with the user's token for auth.uid() in RPC
+        const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
             global: {
                 headers: {
                     Authorization: authHeader
@@ -33,7 +48,7 @@ export async function POST(request: Request) {
         })
 
         // Get user info to generate signature
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        const { data: { user }, error: authError } = await userSupabase.auth.getUser()
         if (authError || !user) {
             return NextResponse.json({ status: 401, message: 'Unauthorized' }, { status: 401 })
         }
@@ -48,7 +63,7 @@ export async function POST(request: Request) {
         const signature = hmac.digest('hex')
 
         // Call the RPC
-        const { data, error } = await supabase.rpc('submit_quiz_score', {
+        const { data, error } = await userSupabase.rpc('submit_quiz_score', {
             p_score: score,
             p_signature: signature
         })

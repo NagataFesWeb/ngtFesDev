@@ -46,7 +46,9 @@ export default function QuizPlayPage() {
                     .single()
 
                 const s = settings as any
-                if (settingsError || !settings || s.value === false || s.value === 'false') {
+                const isEnabled = !settingsError && settings && (s.value === true || s.value === 'true')
+
+                if (!isEnabled) {
                     toast.error('クイズ機能は現在停止されています')
                     router.push('/quiz')
                     return
@@ -199,6 +201,11 @@ export default function QuizPlayPage() {
 
     // Active quiz view
     const q = questions[currentIndex]
+
+    // Guard: Prevent crash if questions are not yet loaded or empty during redirect
+    if (!q) {
+        return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+    }
 
     return (
         <div className="container max-w-2xl py-8 space-y-6">
