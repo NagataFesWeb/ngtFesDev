@@ -113,11 +113,31 @@ export default function QuizDashboardPage() {
 
     // 称号判定ロジック
     const getRank = (score: number) => {
-        if (score >= 100) return { name: 'マスター', color: 'text-yellow-500', icon: Trophy }
-        if (score >= 60) return { name: 'ゴールド', color: 'text-amber-500', icon: Award }
-        if (score >= 30) return { name: 'シルバー', color: 'text-slate-400', icon: Medal }
-        if (score >= 10) return { name: 'ブロンズ', color: 'text-orange-700', icon: Star }
-        return { name: 'ビギナー', color: 'text-muted-foreground', icon: Star }
+        const defaultRank = { name: 'ビギナー', color: 'text-muted-foreground', icon: Star }
+
+        if (!rewards || rewards.length === 0) {
+            // フォールバック（初期表示用）
+            if (score >= 100) return { name: 'マスター', color: 'text-yellow-500', icon: Trophy }
+            if (score >= 60) return { name: 'ゴールド', color: 'text-amber-500', icon: Award }
+            if (score >= 30) return { name: 'シルバー', color: 'text-slate-400', icon: Medal }
+            if (score >= 10) return { name: 'ブロンズ', color: 'text-orange-700', icon: Star }
+            return defaultRank
+        }
+
+        // 達成している最高報酬を探す (rewardsはrequired_score昇順)
+        const achieved = [...rewards].reverse().find(r => score >= r.required_score)
+
+        if (achieved) {
+            let color = 'text-primary'
+            let icon = Award
+            if (achieved.title_name.includes('マスター')) { color = 'text-yellow-500'; icon = Trophy }
+            else if (achieved.title_name.includes('ゴールド')) { color = 'text-amber-500'; icon = Award }
+            else if (achieved.title_name.includes('シルバー')) { color = 'text-slate-400'; icon = Medal }
+            else if (achieved.title_name.includes('ブロンズ')) { color = 'text-orange-700'; icon = Star }
+            return { name: achieved.title_name, color, icon }
+        }
+
+        return defaultRank
     }
 
     const rank = getRank(total_score)
@@ -177,16 +197,19 @@ export default function QuizDashboardPage() {
                         累計正解数: <span className="text-xl mx-1">{total_score}</span> 問
                     </p>
 
-                    {/* 次の称号へのプログレス (簡易) */}
-                    {total_score < 100 && (
-                        <p className="text-xs text-muted-foreground">
-                            次の称号まであと {
-                                total_score < 10 ? 10 - total_score :
-                                    total_score < 30 ? 30 - total_score :
-                                        total_score < 60 ? 60 - total_score :
-                                            100 - total_score
-                            } 問
-                        </p>
+                    {/* 次の称号へのプログレス (動的) */}
+                    {rewards && (
+                        (() => {
+                            const nextReward = rewards.find(r => total_score < r.required_score)
+                            if (nextReward) {
+                                return (
+                                    <p className="text-xs text-muted-foreground">
+                                        次の称号（{nextReward.title_name}）まであと <span className="font-bold text-foreground">{nextReward.required_score - total_score}</span> 問
+                                    </p>
+                                )
+                            }
+                            return <p className="text-xs text-yellow-500 font-bold">全ての称号を達成しました！</p>
+                        })()
                     )}
                 </CardContent>
             </Card>
