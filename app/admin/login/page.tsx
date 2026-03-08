@@ -11,7 +11,7 @@ import { Loader2, Shield } from 'lucide-react'
 
 export default function AdminLoginPage() {
     const router = useRouter()
-    const [email, setEmail] = useState('')
+    const [loginId, setLoginId] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
 
@@ -19,12 +19,20 @@ export default function AdminLoginPage() {
         e.preventDefault()
         setLoading(true)
 
+        // 管理者用ダミーメールアドレスを組み立ててSupabase Authへ送る
+        const dummyEmail = `${loginId}@dummy.ngtfes.com`
+
         try {
             const { error } = await supabase.auth.signInWithPassword({
-                email,
+                email: dummyEmail,
                 password,
             })
-            if (error) throw error
+            if (error) {
+                if (error.message.includes('Invalid login credentials')) {
+                    throw new Error('管理者IDまたはパスワードが間違っています')
+                }
+                throw error
+            }
 
             // Role check happens in layout
             router.push('/admin/dashboard')
@@ -50,10 +58,10 @@ export default function AdminLoginPage() {
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div className="space-y-2">
                             <Input
-                                type="email"
-                                placeholder="admin@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                type="text"
+                                placeholder="管理者ID"
+                                value={loginId}
+                                onChange={(e) => setLoginId(e.target.value)}
                                 required
                             />
                             <Input

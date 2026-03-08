@@ -55,8 +55,29 @@ Supabaseプロジェクトにテーブル定義と初期データを適用する
     *   `supabase/seed.sql` (基本データ)
     *   `supabase/migrations/20260103140000_add_more_seed_data.sql` (追加シードデータ: 2年・3年)
     *   *(任意)* `supabase/seed_slots.sql` (整理券スロットデータ)
+4.  **クイズ機能・報酬の追加**:
+    *   `supabase/migrations/20260305132452_add_nagata_quiz_feature.sql`
+    *   `supabase/migrations/20260305234800_add_quiz_rewards.sql`
 
-### 5. 開発サーバーの起動
+### 6. クイズ報酬（壁紙）のセットアップ (Storage Setup)
+
+クイズの累計スコア報酬として配布する壁紙画像をSupabase Storageに配置する必要があります。
+
+1.  **バケットの作成**:
+    *   Supabase Dashboardの **Storage** を開き、`quiz-rewards` という名前のバケットを作成してください。
+    *   **Public access** は **OFF**（非公開）に設定してください。
+2.  **画像のアップロード**:
+    *   以下の4つのファイルを `quiz-rewards` バケットの**ルート直下**にアップロードしてください。
+    *   ファイル名は**完全に一致**している必要があります：
+        *   `bronze_Nagata_WP.png`
+        *   `silver_Nagata_WP.png`
+        *   `gold_Nagata_WP.png`
+        *   `master_Nagata_WP.png`
+
+> [!NOTE]
+> 画像アセットがない場合は、ダミー画像を配置するか、開発者に確認してください。
+
+### 7. 開発サーバーの起動
 
 以下のコマンドで開発サーバーを起動します。
 

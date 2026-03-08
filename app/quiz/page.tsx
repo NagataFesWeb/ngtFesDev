@@ -1,123 +1,336 @@
 'use client'
 
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trophy, Play } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { useSystemSettings } from '@/hooks/useSystemSettings'
-import { AlertTriangle, Lock } from 'lucide-react'
-
 import { useRouter } from 'next/navigation'
-import { useSession } from '@/contexts/SessionContext'
-import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Loader2, Trophy, PlayCircle, Star, Award, Medal, AlertCircle, Lock } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
-export default function QuizTopPage() {
-    const { settings: systemSettings, loading: settingsLoading } = useSystemSettings()
-    const { session, loading: sessionLoading } = useSession()
+export default function QuizDashboardPage() {
     const router = useRouter()
-
-    useEffect(() => {
-        if (!sessionLoading && !session) {
-            router.push('/login?redirect=/quiz')
-        }
-    }, [session, sessionLoading, router])
-
-    if (sessionLoading) return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner /></div>
-    if (!session) return null // Redirecting...
-
-    return (
-        <div className="container py-12 flex flex-col items-center justify-center min-h-[calc(100vh-3.5rem)] text-center">
-            <div className="mb-8 space-y-4">
-                <div className="mx-auto w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <Trophy className="w-10 h-10 text-yellow-600" />
-                </div>
-                <h1 className="text-4xl font-bold tracking-tight">長田検定</h1>
-                <p className="text-xl text-muted-foreground max-w-md mx-auto">
-                    長田高校にまつわるクイズに挑戦しよう！<br />
-                    あなたの長田愛が試される...
-                </p>
-            </div>
-
-            <Card className="w-full max-w-md mb-8">
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-center">
-                        <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
-                        現在のランキング (Top 10)
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <QuizRankingList />
-                </CardContent>
-            </Card>
-
-            <Card className="w-full max-w-md mb-8">
-                <CardHeader>
-                    <CardTitle>ルール</CardTitle>
-                </CardHeader>
-                <CardContent className="text-left space-y-2">
-                    <p>1. 全5問のクイズが出題されます。</p>
-                    <p>2. 正解すると10ポイント獲得。</p>
-                    <p>3. 何度でも挑戦できます。</p>
-                    <p>4. ハイスコアはランキングに反映されます。</p>
-                </CardContent>
-            </Card>
-
-            {systemSettings.quiz_enabled ? (
-                <Link href="/quiz/play">
-                    <Button size="lg" className="h-16 px-12 text-xl shadow-lg animate-pulse">
-                        <Play className="mr-2 h-6 w-6" /> クイズを始める
-                    </Button>
-                </Link>
-            ) : (
-                <div className="flex flex-col items-center gap-2">
-                    <Button size="lg" className="h-16 px-12 text-xl" disabled>
-                        <Lock className="mr-2 h-6 w-6" /> 現在利用できません
-                    </Button>
-                    <p className="text-sm text-muted-foreground">管理者の設定により停止中です</p>
-                </div>
-            )}
-        </div>
-    )
-}
-
-const QuizRankingList = () => {
-    const [ranking, setRanking] = useState<{ display_name: string, highest_score: number, total_score: number }[]>([])
     const [loading, setLoading] = useState(true)
+    const [stats, setStats] = useState<{
+        total_score: number
+        highest_score: number
+        play_count: number
+    } | null>(null)
+    const [ranking, setRanking] = useState<{
+        display_name: string
+        total_score: number
+        highest_score: number
+        play_count: number
+    }[] | null>(null)
+    const [rewards, setRewards] = useState<{
+        id: number
+        required_score: number
+        title_name: string
+        storage_path: string
+    }[] | null>(null)
+    const [isEnabled, setIsEnabled] = useState<boolean>(true)
+    const [downloadingId, setDownloadingId] = useState<number | null>(null)
 
     useEffect(() => {
-        const fetchRanking = async () => {
-            const { data } = await supabase.rpc('get_quiz_ranking')
-            if (data) {
-                setRanking(data as any)
+        const fetchData = async () => {
+            // 1. Check Feature Toggle
+            const { data: settings, error: settingsError } = await supabase
+                .from('system_settings')
+                .select('value')
+                .eq('key', 'quiz_enabled')
+                .single()
+
+            if (!settingsError && settings) {
+                const s = settings as any
+                setIsEnabled(s.value === true || s.value === 'true')
+            }
+
+            // 2. Fetch Ranking & Rewards
+            const [rankingRes, rewardsRes] = await Promise.all([
+                (supabase.rpc('get_quiz_ranking') as unknown) as Promise<any>,
+                (supabase.from('quiz_rewards').select('*').order('required_score', { ascending: true }) as unknown) as Promise<any>
+            ])
+
+            if (!rankingRes.error && rankingRes.data) {
+                setRanking(rankingRes.data)
+            }
+            if (!rewardsRes.error && rewardsRes.data) {
+                setRewards(rewardsRes.data)
+            }
+
+            // 3. Fetch Stats
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) {
+                router.push('/login?redirect=/quiz')
+                return
+            }
+
+            const { data, error } = await supabase
+                .from('quiz_scores')
+                .select('total_score, highest_score, play_count')
+                .eq('user_id', session.user.id)
+                .single()
+
+            if (!error && data) {
+                setStats(data as any)
+            } else {
+                // Return 0s if no record exists yet
+                setStats({ total_score: 0, highest_score: 0, play_count: 0 })
             }
             setLoading(false)
         }
-        fetchRanking()
-    }, [])
 
-    if (loading) return <div className="text-center py-4">読み込み中...</div>
-    if (ranking.length === 0) return <div className="text-center py-4 text-muted-foreground">ランキングデータがありません</div>
+        fetchData()
+    }, [router])
+
+    if (loading) {
+        return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
+    }
+
+
+    const { total_score = 0, highest_score = 0, play_count = 0 } = stats || {}
+
+    // 称号判定ロジック
+    const getRank = (score: number) => {
+        const defaultRank = { name: 'ビギナー', color: 'text-muted-foreground', icon: Star }
+
+        if (!rewards || rewards.length === 0) {
+            // フォールバック（初期表示用）
+            if (score >= 100) return { name: 'マスター', color: 'text-yellow-500', icon: Trophy }
+            if (score >= 60) return { name: 'ゴールド', color: 'text-amber-500', icon: Award }
+            if (score >= 30) return { name: 'シルバー', color: 'text-slate-400', icon: Medal }
+            if (score >= 10) return { name: 'ブロンズ', color: 'text-orange-700', icon: Star }
+            return defaultRank
+        }
+
+        // 達成している最高報酬を探す (rewardsはrequired_score昇順)
+        const achieved = [...rewards].reverse().find(r => score >= r.required_score)
+
+        if (achieved) {
+            let color = 'text-primary'
+            let icon = Award
+            if (achieved.title_name.includes('マスター')) { color = 'text-yellow-500'; icon = Trophy }
+            else if (achieved.title_name.includes('ゴールド')) { color = 'text-amber-500'; icon = Award }
+            else if (achieved.title_name.includes('シルバー')) { color = 'text-slate-400'; icon = Medal }
+            else if (achieved.title_name.includes('ブロンズ')) { color = 'text-orange-700'; icon = Star }
+            return { name: achieved.title_name, color, icon }
+        }
+
+        return defaultRank
+    }
+
+    const rank = getRank(total_score)
+    const RankIcon = rank.icon
+
+    const handleDownload = async (rewardId: number) => {
+        try {
+            setDownloadingId(rewardId)
+            const { data, error } = await (supabase.rpc as any)('get_quiz_reward_url', { p_reward_id: rewardId })
+
+            if (error || !data || (data as any[]).length === 0) {
+                console.error('RPC Error or No Data:', error, data)
+                throw new Error('未達成またはエラーが発生しました')
+            }
+
+            const { signed_url: path } = data[0] as any
+            console.log('Attempting to download path:', path)
+
+            // 2. Create Signed URL from Storage
+            const { data: signData, error: signError } = await supabase.storage
+                .from('quiz-rewards')
+                .createSignedUrl(path, 3600)
+
+            if (signError || !signData) throw signError
+
+            // 3. Trigger Download
+            const link = document.createElement('a')
+            link.href = signData.signedUrl
+            link.download = path.split('/').pop() || 'wallpaper.png'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+        } catch (err: any) {
+            alert(err.message || 'ダウンロードに失敗しました')
+        } finally {
+            setDownloadingId(null)
+        }
+    }
 
     return (
-        <ul className="space-y-2">
-            <li className="flex justify-between text-xs text-muted-foreground border-b pb-1 px-2">
-                <span className="w-8">順位</span>
-                <span className="flex-1">名前</span>
-                <span className="w-16 text-right">合計</span>
-                <span className="w-16 text-right">最高</span>
-            </li>
-            {ranking.map((item, index) => (
-                <li key={index} className="flex justify-between items-center text-sm border-b py-2 last:border-0">
-                    <span className={`font-bold w-8 text-left ${index < 3 ? 'text-primary' : 'text-muted-foreground'}`}>
-                        #{index + 1}
-                    </span>
-                    <span className="flex-1 text-left truncate px-2">{item.display_name || 'No Name'}</span>
-                    <span className="w-16 text-right font-mono font-bold text-primary">{item.total_score}pt</span>
-                    <span className="w-16 text-right font-mono text-muted-foreground text-xs">{item.highest_score}pt</span>
-                </li>
-            ))}
-        </ul>
+        <div className="container max-w-2xl py-8 space-y-6">
+            <div className="text-center space-y-2">
+                <h1 className="text-3xl font-bold tracking-tight">長田検定</h1>
+                <p className="text-muted-foreground">長田高校に関するクイズに挑戦して、あなたの知識を深めましょう！</p>
+            </div>
+
+            <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="text-center pb-2">
+                    <CardTitle className="text-xl">あなたの現在の称号</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center space-y-4">
+                    <div className={`p-4 rounded-full bg-background shadow-md ${rank.color}`}>
+                        <RankIcon className="w-16 h-16" />
+                    </div>
+                    <h2 className={`text-3xl font-black ${rank.color}`}>{rank.name}</h2>
+                    <p className="text-sm font-medium">
+                        累計正解数: <span className="text-xl mx-1">{total_score}</span> 問
+                    </p>
+
+                    {/* 次の称号へのプログレス (動的) */}
+                    {rewards && (
+                        (() => {
+                            const nextReward = rewards.find(r => total_score < r.required_score)
+                            if (nextReward) {
+                                return (
+                                    <p className="text-xs text-muted-foreground">
+                                        次の称号（{nextReward.title_name}）まであと <span className="font-bold text-foreground">{nextReward.required_score - total_score}</span> 問
+                                    </p>
+                                )
+                            }
+                            return <p className="text-xs text-yellow-500 font-bold">全ての称号を達成しました！</p>
+                        })()
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* ランキングセクション */}
+            {ranking && ranking.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-2">
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                        <h2 className="text-xl font-bold">ランキング（上位3名）</h2>
+                    </div>
+                    <div className="grid gap-3">
+                        {ranking.map((row, idx) => {
+                            const userRank = getRank(row.total_score)
+                            const UserRankIcon = userRank.icon
+
+                            return (
+                                <Card key={idx} className={idx === 0 ? "border-yellow-500/30 bg-yellow-50/50 dark:bg-yellow-900/10" : ""}>
+                                    <CardContent className="flex items-center p-4">
+                                        <div className="mr-3 flex items-center justify-center w-8 h-8 rounded-full font-black text-lg">
+                                            {idx === 0 && <span className="text-yellow-500">1</span>}
+                                            {idx === 1 && <span className="text-slate-400">2</span>}
+                                            {idx === 2 && <span className="text-amber-600">3</span>}
+                                        </div>
+                                        <div className={`mr-3 p-2 rounded-full bg-background shadow-sm ${userRank.color}`}>
+                                            <UserRankIcon className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold leading-tight">{row.display_name}</p>
+                                            <div className="flex gap-3 mt-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                                                <span>1回最高: <strong>{row.highest_score ?? 0}</strong></span>
+                                                <span>挑戦: <strong>{row.play_count ?? 0}</strong>回</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-xl font-black">{row.total_score ?? 0}</span>
+                                            <span className="ml-1 text-xs text-muted-foreground font-bold">問</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* 報酬セクション */}
+            {rewards && rewards.length > 0 && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-2">
+                        <Award className="w-5 h-5 text-primary" />
+                        <h2 className="text-xl font-bold">称号報酬（壁紙）</h2>
+                    </div>
+                    <div className="grid gap-3">
+                        {rewards.map((reward) => {
+                            const isUnlocked = total_score >= reward.required_score
+                            const rewardRank = getRank(reward.required_score)
+                            const RewardIcon = rewardRank.icon
+
+                            return (
+                                <Card key={reward.id} className={!isUnlocked ? "opacity-60 grayscale" : "border-primary/30"}>
+                                    <CardContent className="flex items-center p-4">
+                                        <div className={`mr-4 p-2 rounded-full bg-background shadow-sm ${rewardRank.color}`}>
+                                            <RewardIcon className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold">{reward.title_name} 壁紙</p>
+                                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                                                必要: {reward.required_score}問
+                                            </p>
+                                        </div>
+                                        <div>
+                                            {isUnlocked ? (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleDownload(reward.id)}
+                                                    disabled={downloadingId === reward.id}
+                                                >
+                                                    {downloadingId === reward.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        'ダウンロード'
+                                                    )}
+                                                </Button>
+                                            ) : (
+                                                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+                                                    未達成
+                                                </span>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+                <Card>
+                    <CardHeader className="py-4">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">最高スコア (1回)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{highest_score} / 10</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="py-4">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">プレイ回数</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{play_count} 回</div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="flex flex-col gap-4 mt-8 pt-4">
+                <Button
+                    size="lg"
+                    className="w-full text-lg h-16 font-bold"
+                    onClick={() => router.push('/quiz/play')}
+                    disabled={!isEnabled}
+                >
+                    {isEnabled ? (
+                        <>
+                            <PlayCircle className="w-6 h-6 mr-2" />
+                            クイズに挑戦する (全10問)
+                        </>
+                    ) : (
+                        <>
+                            <Lock className="w-6 h-6 mr-2" />
+                            現在クイズは停止中です
+                        </>
+                    )}
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                    ※ 1回につきランダムに10問出題されます。<br />
+                    ※ スコアの登録は1分に1回のみ可能です。
+                </p>
+            </div>
+        </div>
     )
 }

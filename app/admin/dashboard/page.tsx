@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Trash2, TrendingUp, AlertTriangle, Users, Settings, RefreshCcw, Ticket, ChevronRight, ArrowLeft } from 'lucide-react'
+import { Trash2, AlertTriangle, Users, Settings, RefreshCcw, Ticket, ChevronRight, ArrowLeft, Search } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { cn } from '@/lib/utils'
 import { NewsManager } from '@/components/admin/NewsManager'
@@ -65,9 +65,12 @@ function SlotCapacityEditor({ slot, onUpdate }: { slot: any, onUpdate: (id: stri
 }
 
 export default function AdminDashboard() {
+    const [loadingStats, setLoadingStats] = useState(false)
+
     // Congestion Stats
     const [projects, setProjects] = useState<any[]>([])
     const [loadingProjects, setLoadingProjects] = useState(false)
+    const [searchTerm, setSearchTerm] = useState('')
 
     // FastPass Stats
     const [fpProjects, setFpProjects] = useState<any[]>([])
@@ -86,6 +89,7 @@ export default function AdminDashboard() {
     const [resetting, setResetting] = useState(false)
 
     // --- Data Fetching ---
+
 
     const fetchProjects = async () => {
         setLoadingProjects(true)
@@ -124,6 +128,12 @@ export default function AdminDashboard() {
         fetchFpProjects()
         fetchSettings()
     }, [])
+
+    // Filter Logic
+    const filteredProjects = projects.filter(project =>
+        (project.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (project.class_name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    )
 
     // --- Actions ---
 
@@ -224,8 +234,9 @@ export default function AdminDashboard() {
                     <TabsTrigger value="danger" className="text-red-500">危険</TabsTrigger>
                 </TabsList>
 
+
                 {/* --- NEWS TAB --- */}
-                <TabsContent value="news" className="space-y-4">
+                <TabsContent value="news" className="space-y-4" defaultValue="news">
                     <NewsManager />
                 </TabsContent>
 
@@ -240,6 +251,16 @@ export default function AdminDashboard() {
                                     目安: 空き(20%未満), やや混(20-80%), 混雑(80%以上)
                                 </span>
                             </CardDescription>
+                            <div className="mt-4 relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    type="search"
+                                    placeholder="企画名またはクラスで検索..."
+                                    className="pl-9"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {loadingProjects ? <LoadingSpinner /> : (
@@ -254,7 +275,7 @@ export default function AdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {projects.map((project) => (
+                                            {filteredProjects.map((project) => (
                                                 <tr key={project.project_id} className="border-t hover:bg-muted/50">
                                                     <td className="p-3 font-mono">{project.class_name}</td>
                                                     <td className="p-3 font-medium">{project.title}</td>
@@ -404,8 +425,10 @@ export default function AdminDashboard() {
                                         <div key={setting.key} className="flex items-center justify-between rounded-lg border p-4">
                                             <div className="space-y-0.5">
                                                 <div className="font-medium">
-                                                    {setting.key === 'quiz_enabled' ? 'クイズ機能' :
-                                                        setting.key === 'fastpass_enabled' ? '整理券発券' : setting.key}
+                                                    {setting.key === 'voting_enabled' ? '投票機能' :
+                                                        setting.key === 'quiz_enabled' ? 'クイズ機能' :
+                                                            setting.key === 'fastpass_enabled' ? '整理券発券' :
+                                                                setting.key === 'operator_edit_enabled' ? '運営者情報編集' : setting.key}
                                                 </div>
                                                 <div className="text-sm text-muted-foreground">{setting.description}</div>
                                             </div>
