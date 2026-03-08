@@ -21,7 +21,7 @@ export default function OperatorLayout({
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
-                <div className="container flex h-14 items-center justify-between">
+                <div className="container mx-auto px-4 flex h-14 items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/operator/dashboard" className="font-bold">
                             運営用ダッシュボード
@@ -39,7 +39,7 @@ export default function OperatorLayout({
                     </div>
                 </div>
             </header>
-            <main className="container py-8">
+            <main className="container mx-auto px-4 py-8">
                 {children}
             </main>
         </div>

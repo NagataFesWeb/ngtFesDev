@@ -45,7 +45,7 @@ export default function OperatorLoginPage() {
     }
 
     return (
-        <div className="container flex items-center justify-center min-h-[calc(100vh-3.5rem)] py-12 bg-slate-50 dark:bg-slate-900">
+        <div className="container mx-auto px-4 flex items-center justify-center min-h-[calc(100vh-3.5rem)] py-12 bg-slate-50 dark:bg-slate-900">
             <Card className="w-full max-w-sm shadow-lg">
                 <CardHeader className="space-y-1">
                     <div className="flex justify-center mb-4">

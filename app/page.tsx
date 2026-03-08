@@ -10,7 +10,7 @@ export default function Home() {
     <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
       {/* Hero Section */}
       <section className="flex-1 flex flex-col items-center justify-center py-12 md:py-24 lg:py-32 bg-gradient-to-b from-primary/10 to-background">
-        <div className="container px-4 md:px-6 flex flex-col items-center text-center space-y-4">
+        <div className="container mx-auto px-4 md:px-6 flex flex-col items-center text-center space-y-4">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
               NgtFes26
@@ -31,7 +31,7 @@ export default function Home() {
 
       {/* Menu Grid */}
       <section className="w-full py-12 md:py-24 lg:py-32">
-        <div className="container px-4 md:px-6">
+        <div className="container mx-auto px-4 md:px-6">
           <div className="grid gap-6 md:grid-cols-3 lg:gap-12">
             <Link href="/projects" className="group">
               <Card className="h-full transition-colors group-hover:bg-muted/50">
@@ -78,7 +78,7 @@ export default function Home() {
 
       {/* News Section */}
       <section className="w-full py-12 bg-muted/50">
-        <div className="container px-4 md:px-6">
+        <div className="container mx-auto px-4 md:px-6">
           <h2 className="text-2xl font-bold tracking-tighter mb-4 flex items-center">
             📢 お知らせ
           </h2>

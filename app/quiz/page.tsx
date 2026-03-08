@@ -156,7 +156,7 @@ export default function QuizDashboardPage() {
     }
 
     return (
-        <div className="container max-w-2xl py-8 space-y-6">
+        <div className="container mx-auto px-4 max-w-2xl py-8 space-y-6">
             <div className="text-center space-y-2">
                 <h1 className="text-3xl font-bold tracking-tight">長田検定</h1>
                 <p className="text-muted-foreground">長田高校に関するクイズに挑戦して、あなたの知識を深めましょう！</p>
