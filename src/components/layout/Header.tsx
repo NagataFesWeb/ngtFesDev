@@ -34,6 +34,9 @@ export const Header = () => {
             <Link href="/mypage" className="text-sm font-medium transition-colors hover:text-primary">
                 マイページ
             </Link>
+            <Link href="/access" className="text-sm font-medium transition-colors hover:text-primary">
+                アクセス
+            </Link>
         </>
     )
 
