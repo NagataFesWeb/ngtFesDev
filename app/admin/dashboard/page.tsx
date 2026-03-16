@@ -217,7 +217,7 @@ export default function AdminDashboard() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="max-w-6xl mx-auto space-y-8">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold">システム管理</h1>
                 <Button variant="outline" size="icon" onClick={() => { fetchProjects(); fetchFpProjects(); fetchSettings(); }}>

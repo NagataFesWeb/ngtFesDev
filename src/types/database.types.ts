@@ -262,6 +262,30 @@ export interface Database {
                 }
                 Relationships: []
             }
+            quiz_rewards: {
+                Row: {
+                    id: number
+                    required_score: number
+                    title_name: string
+                    storage_path: string
+                    created_at: string
+                }
+                Insert: {
+                    id?: number
+                    required_score: number
+                    title_name: string
+                    storage_path: string
+                    created_at?: string
+                }
+                Update: {
+                    id?: number
+                    required_score?: number
+                    title_name?: string
+                    storage_path?: string
+                    created_at?: string
+                }
+                Relationships: []
+            }
             operation_logs: {
                 Row: {
                     log_id: string
@@ -360,7 +384,7 @@ export interface Database {
                 Returns: Json
             }
             submit_quiz_score: {
-                Args: { p_answers: Json }
+                Args: { p_score: number; p_signature: string }
                 Returns: Json
             }
             get_quiz_ranking: {
@@ -369,7 +393,16 @@ export interface Database {
                     display_name: string
                     highest_score: number
                     total_score: number
+                    play_count: number
                 }[]
+            }
+            get_quiz_questions: {
+                Args: Record<string, never>
+                Returns: Json
+            }
+            get_quiz_reward_url: {
+                Args: { p_reward_id: number }
+                Returns: Json
             }
             get_estimated_wait_time: {
                 Args: { p_project_id: string }

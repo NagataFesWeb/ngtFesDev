@@ -65,7 +65,7 @@ export default function QuizPlayPage() {
                 const { data, error } = await supabase.rpc('get_quiz_questions')
                 if (error) throw error
 
-                const questionsData = data as Question[]
+                const questionsData = data as unknown as Question[]
 
                 if (!questionsData || questionsData.length === 0) {
                     throw new Error('問題が取得できませんでした')
@@ -161,7 +161,7 @@ export default function QuizPlayPage() {
     // Finished view
     if (resultData || (isSubmitting && currentIndex === questions.length - 1 && isAnswered)) {
         return (
-            <div className="container flex items-center justify-center min-h-[calc(100vh-3.5rem)] py-12">
+            <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-3.5rem)] py-12">
                 <Card className="w-full max-w-md text-center shadow-xl border-primary/20">
                     <CardHeader>
                         <CardTitle className="text-2xl">スコア結果</CardTitle>
@@ -208,7 +208,7 @@ export default function QuizPlayPage() {
     }
 
     return (
-        <div className="container max-w-2xl py-8 space-y-6">
+        <div className="container mx-auto max-w-2xl py-8 space-y-6">
             <div className="flex justify-between items-center text-sm font-medium text-muted-foreground">
                 <span>問題 {currentIndex + 1} / {questions.length}</span>
                 <span>現在のスコア: {score}</span>

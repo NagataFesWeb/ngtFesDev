@@ -69,7 +69,7 @@ export default function AdminLayout({
     return (
         <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
             <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
-                <div className="container flex h-14 items-center justify-between">
+                <div className="container mx-auto flex h-14 items-center justify-between px-4">
                     <div className="flex items-center gap-2 font-bold text-red-600">
                         <ShieldAlert className="h-5 w-5" />
                         管理者ダッシュボード
@@ -79,7 +79,7 @@ export default function AdminLayout({
                     </Button>
                 </div>
             </header>
-            <main className="container py-8">
+            <main className="container mx-auto py-8 px-4">
                 {children}
             </main>
         </div>
