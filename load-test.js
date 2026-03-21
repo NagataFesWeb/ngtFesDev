@@ -10,18 +10,25 @@ export const options = {
 };
 
 export default function loadTest() {
-  // ★ あなたのポート転送URL + 画面のパス（あれば）
-  const url = 'https://3j8pgn6z-3000.jpe1.devtunnels.ms/projects';
-  
-  const res = http.get(url);
+  const BASE_URL = 'https://nagata-fes.vercel.app';
 
-  check(res, {
-    'status is 200': (r) => r.status === 200,
-    // 画面に「長田」という文字があるかチェック（正しくページが開けている証拠）
-    'has quiz text': (r) => r.body.includes('長田'),
+  // 1. トップページへのアクセス
+  const resHome = http.get(BASE_URL);
+  check(resHome, {
+    'home status is 200': (r) => r.status === 200,
+    'has home text': (r) => r.body.includes('長田'),
   });
 
-  // 実際のユーザーっぽく、1秒〜3秒の間でランダムに待機
+  // 実際のユーザーのように少し待機 (0.5秒〜1.5秒)
+  sleep(Math.random() * 1 + 0.5);
+
+  // 2. /projects ページへのアクセス
+  const resProjects = http.get(`${BASE_URL}/projects`);
+  check(resProjects, {
+    'projects status is 200': (r) => r.status === 200,
+    'has projects text': (r) => r.body.includes('1-1'), 
+  });
+
+  // 次のループまでランダムに待機
   sleep(Math.random() * 2 + 1);
 }
-
