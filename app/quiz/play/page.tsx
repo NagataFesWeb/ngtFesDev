@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Loader2, ArrowRight, CheckCircle2, XCircle } from 'lucide-react'
+import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 // Remove Node.js 'crypto' import for client-side Web Crypto API usage
@@ -106,7 +106,7 @@ export default function QuizPlayPage() {
         setSelectedChoice(index)
 
         const q = questions[currentIndex]
-        
+
         // Find correct answer by hashing all possibilities to show visual feedback immediately
         let actualCorrectIdx = -1
         for (let i = 0; i < q.choices.length; i++) {
@@ -116,7 +116,7 @@ export default function QuizPlayPage() {
                 break
             }
         }
-        
+
         setCorrectChoiceIndex(actualCorrectIdx)
         const correct = actualCorrectIdx === index
         setIsCorrect(correct)
@@ -141,19 +141,6 @@ export default function QuizPlayPage() {
                 submitTotalScore(newScore)
             }
         }, 1000)
-    }
-
-    const nextQuestion = async () => {
-        if (currentIndex < questions.length - 1) {
-            setSelectedChoice(null)
-            setCorrectChoiceIndex(null)
-            setIsAnswered(false)
-            setIsCorrect(null)
-            setCurrentIndex(prev => prev + 1)
-        } else {
-            // Finish Quiz
-            await submitTotalScore(score)
-        }
     }
 
     const submitTotalScore = async (finalScore: number) => {
@@ -287,17 +274,6 @@ export default function QuizPlayPage() {
                         )
                     })}
                 </CardContent>
-                <CardFooter className="bg-slate-50 dark:bg-slate-900/50 justify-end rounded-b-lg border-t pt-4">
-                    <Button
-                        onClick={nextQuestion}
-                        disabled={!isAnswered || isWaiting}
-                        size="lg"
-                        className="font-bold"
-                    >
-                        {currentIndex < questions.length - 1 ? '次の問題へ' : '結果を見る'}
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                </CardFooter>
             </Card>
         </div>
     )
