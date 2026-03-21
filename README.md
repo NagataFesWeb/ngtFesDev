@@ -40,24 +40,25 @@ SUPABASE_SERVICE_ROLE_KEY=あなたのSupabase Service Role Key (Backend用)
 ### 4. データベースの準備 (Database Setup)
 
 Supabaseプロジェクトにテーブル定義と初期データを適用する必要があります。
-**Supabase Dashboard > SQL Editor** を開き、以下の順序でSQLスクリプトを実行してください。
+本プロジェクトでは、すべてのスキーマ定義、必要なRPC関数、およびシードデータが1つのSQLファイルに統合されています。
 
-1.  **初期スキーマの適用**:
-    *   `supabase/migrations/20251231190000_init_schema.sql`
-    *   `supabase/migrations/20260103130000_fix_news_and_schema.sql` (テーブル修正・ヘルパー関数)
+以下のいずれかの方法で、**`supabase/full_setup.sql`** を実行してデータベースを初期化してください。
 
-2.  **RPC（機能）の追加**:
-    *   `supabase/migrations/20260103100000_add_wait_time.sql` (待ち時間計算)
-    *   `supabase/migrations/20260103103000_add_list_rpc.sql` (プロジェクト一覧取得)
-    *   `supabase/migrations/20260103110000_update_ranking_rpc.sql` (ランキングロジック)
+**方法A: Supabase Dashboardから実行する（推奨）**
+1. **Supabase Dashboard > SQL Editor** を開きます。
+2. `supabase/full_setup.sql` の内容をコピーし、エディタに貼り付けて実行（Run）します。
 
-3.  **基礎データの投入 (重要)**:
-    *   `supabase/seed.sql` (基本データ)
-    *   `supabase/migrations/20260103140000_add_more_seed_data.sql` (追加シードデータ: 2年・3年)
-    *   *(任意)* `supabase/seed_slots.sql` (整理券スロットデータ)
-4.  **クイズ機能・報酬の追加**:
-    *   `supabase/migrations/20260305132452_add_nagata_quiz_feature.sql`
-    *   `supabase/migrations/20260305234800_add_quiz_rewards.sql`
+**方法B: CLI (psql) を使用して実行する**
+ターミナルで以下のコマンドを実行し、ファイルを適用します。
+実行前に、`<YOUR_DB_PASSWORD>` や `<YOUR_PROJECT_REF>` をご自身のSupabaseプロジェクトの情報に書き換えてください。
+
+```bash
+# PGPASSWORD環境変数を設定してpsqlコマンドを実行します
+PGPASSWORD="<YOUR_DB_PASSWORD>" psql -h db.<YOUR_PROJECT_REF>.supabase.co -p 5432 -d postgres -U postgres -f supabase/full_setup.sql
+```
+
+> [!NOTE]
+> `full_setup.sql` には、必要なマイグレーション手順と初期データがすべて含まれています。これを実行するだけで、必須テーブルの構築からクイズ機能・ファストパスの初期設定までが完了します。
 
 ### 6. クイズ報酬（壁紙）のセットアップ (Storage Setup)
 
