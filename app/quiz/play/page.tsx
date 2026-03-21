@@ -27,6 +27,8 @@ export default function QuizPlayPage() {
     const [selectedChoice, setSelectedChoice] = useState<number | null>(null)
     const [isAnswered, setIsAnswered] = useState(false)
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
+    const [correctChoiceIndex, setCorrectChoiceIndex] = useState<number | null>(null)
+    const [isWaiting, setIsWaiting] = useState(false)
 
     // Total score
     const [score, setScore] = useState(0)
@@ -98,35 +100,63 @@ export default function QuizPlayPage() {
     }
 
     const handleAnswer = async (index: number) => {
-        if (isAnswered) return
+        if (isAnswered || isWaiting) return
 
-        setSelectedChoice(index)
         setIsAnswered(true)
+        setSelectedChoice(index)
 
         const q = questions[currentIndex]
-        const hashedAttempt = await hashAnswer(q.q_id, index)
-
-        const correct = hashedAttempt === q.correct_hash
+        
+        // Find correct answer by hashing all possibilities to show visual feedback immediately
+        let actualCorrectIdx = -1
+        for (let i = 0; i < q.choices.length; i++) {
+            const hash = await hashAnswer(q.q_id, i)
+            if (hash === q.correct_hash) {
+                actualCorrectIdx = i
+                break
+            }
+        }
+        
+        setCorrectChoiceIndex(actualCorrectIdx)
+        const correct = actualCorrectIdx === index
         setIsCorrect(correct)
 
+        let newScore = score
         if (correct) {
-            setScore(prev => prev + 1)
+            newScore = score + 1
+            setScore(newScore)
         }
+
+        // Wait 1 second before proceeding automatically
+        setIsWaiting(true)
+        setTimeout(() => {
+            setIsWaiting(false)
+            if (currentIndex < questions.length - 1) {
+                setSelectedChoice(null)
+                setCorrectChoiceIndex(null)
+                setIsAnswered(false)
+                setIsCorrect(null)
+                setCurrentIndex(currentIndex + 1)
+            } else {
+                submitTotalScore(newScore)
+            }
+        }, 1000)
     }
 
     const nextQuestion = async () => {
         if (currentIndex < questions.length - 1) {
             setSelectedChoice(null)
+            setCorrectChoiceIndex(null)
             setIsAnswered(false)
             setIsCorrect(null)
             setCurrentIndex(prev => prev + 1)
         } else {
             // Finish Quiz
-            await submitTotalScore()
+            await submitTotalScore(score)
         }
     }
 
-    const submitTotalScore = async () => {
+    const submitTotalScore = async (finalScore: number) => {
         setIsSubmitting(true)
         try {
             const { data: { session } } = await supabase.auth.getSession()
@@ -138,7 +168,7 @@ export default function QuizPlayPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${session.access_token}`
                 },
-                body: JSON.stringify({ score })
+                body: JSON.stringify({ score: finalScore })
             })
 
             const data = await response.json()
@@ -221,30 +251,36 @@ export default function QuizPlayPage() {
                 <CardContent className="space-y-3">
                     {q.choices.map((choice, idx) => {
                         let btnVariant: 'outline' | 'default' | 'destructive' | 'secondary' = 'outline'
+                        let customClass = ''
 
-                        if (isAnswered) {
-                            if (idx === selectedChoice) {
-                                btnVariant = isCorrect ? 'default' : 'destructive'
+                        if (isAnswered && correctChoiceIndex !== null) {
+                            if (idx === correctChoiceIndex) {
+                                // Correct Answer: Green
+                                customClass = 'bg-green-600 hover:bg-green-600 text-white border-green-600 disabled:opacity-100'
+                            } else if (idx === selectedChoice) {
+                                // User's Incorrect Choice: Muted Blue (Steel Blue/Slate)
+                                customClass = 'bg-slate-500 hover:bg-slate-500 text-white border-slate-500 disabled:opacity-100'
                             } else {
-                                // Provide hint of correct answer? The DB doesn't give it back if wrong due to hashing.
-                                // We can only evaluate the clicked one.
-                                btnVariant = 'secondary'
+                                // Other Choices: Gray
+                                customClass = 'bg-muted hover:bg-muted text-muted-foreground border-muted disabled:opacity-100'
                             }
                         }
+
+                        const variantType = customClass ? 'default' : btnVariant
 
                         return (
                             <Button
                                 key={idx}
-                                variant={btnVariant}
-                                className={`w-full justify-start h-auto py-4 px-6 text-left whitespace-normal text-md ${isAnswered ? 'opacity-90' : 'hover:border-primary'}`}
+                                variant={variantType}
+                                className={`w-full justify-start h-auto py-4 px-6 text-left whitespace-normal text-md transition-colors ${!isAnswered ? 'hover:border-primary' : ''} ${customClass}`}
                                 onClick={() => handleAnswer(idx)}
-                                disabled={isAnswered}
+                                disabled={isAnswered || isWaiting}
                             >
                                 <span className="font-bold mr-4 text-muted-foreground">{['A', 'B', 'C', 'D'][idx]}</span>
                                 {choice}
                                 {isAnswered && idx === selectedChoice && (
                                     <span className="ml-auto">
-                                        {isCorrect ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
+                                        {isCorrect ? <CheckCircle2 className="w-5 h-5 text-white" /> : <XCircle className="w-5 h-5 text-white" />}
                                     </span>
                                 )}
                             </Button>
@@ -254,7 +290,7 @@ export default function QuizPlayPage() {
                 <CardFooter className="bg-slate-50 dark:bg-slate-900/50 justify-end rounded-b-lg border-t pt-4">
                     <Button
                         onClick={nextQuestion}
-                        disabled={!isAnswered}
+                        disabled={!isAnswered || isWaiting}
                         size="lg"
                         className="font-bold"
                     >
