@@ -148,7 +148,7 @@ export default function ProjectDetailsPage() {
     if (error || !project) return <div className="p-8"><ErrorMessage message={error || 'Project not found'} /></div>
 
     return (
-        <div className="container py-8 max-w-3xl">
+        <div className="container mx-auto px-4 md:px-6 py-8 max-w-3xl">
             <Button variant="ghost" className="mb-4 pl-0" onClick={() => router.back()}>
                 <ArrowLeft className="mr-2 h-4 w-4" /> 戻る
             </Button>

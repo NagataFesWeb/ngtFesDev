@@ -21,6 +21,7 @@ export default function MyPage() {
     const { session, loading: sessionLoading } = useSession()
     const router = useRouter()
     const [displayName, setDisplayName] = useState('')
+    const [loginId, setLoginId] = useState('')
     const [isEditing, setIsEditing] = useState(false)
     const [saving, setSaving] = useState(false)
     const [tickets, setTickets] = useState<FastPassTicket[]>([])
@@ -38,12 +39,17 @@ export default function MyPage() {
             // Fetch profile
             const { data: userData } = await supabase
                 .from('users')
-                .select('display_name')
+                .select('display_name, login_id')
                 .eq('user_id', session.user.id)
                 .single()
 
-            if (userData && 'display_name' in userData) {
-                setDisplayName((userData as any).display_name || '')
+            if (userData) {
+                if ('display_name' in userData) {
+                    setDisplayName((userData.display_name as string) || '')
+                }
+                if ('login_id' in userData) {
+                    setLoginId((userData.login_id as string) || '')
+                }
             }
         }
 
@@ -63,7 +69,7 @@ export default function MyPage() {
                 .eq('used', false)
 
             if (!error && data) {
-                setTickets(data as any)
+                setTickets(data as FastPassTicket[])
             }
             setLoading(false)
         }
@@ -78,8 +84,8 @@ export default function MyPage() {
         if (!session?.user) return
         setSaving(true)
         try {
-            const { error } = await (supabase
-                .from('users') as any)
+            const { error } = await supabase
+                .from('users')
                 .update({ display_name: displayName })
                 .eq('user_id', session.user.id)
 
@@ -106,7 +112,7 @@ export default function MyPage() {
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-2xl font-bold">マイページ</h1>
-                    <p className="text-muted-foreground">{session.user.email || 'ゲストユーザー'}</p>
+                    <p className="text-muted-foreground">{loginId || session.user.email || 'ゲストユーザー'}</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" /> ログアウト
