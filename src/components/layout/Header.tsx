@@ -40,11 +40,38 @@ export const Header = () => {
         </>
     )
 
+    const NavLinksMobile = () => (
+        <>
+            <Link href="/" className="text-xl  transition-colors hover:text-primary py-2 border-b-1 border-foreground">
+                トップ
+            </Link>
+            <Link href="/projects" className="text-xl  transition-colors hover:text-primary py-2 border-b-1 border-foreground">
+                企画一覧
+            </Link>
+            <Link href="/quiz" className="text-xl  transition-colors hover:text-primary py-2 border-b-1 border-foreground">
+                長田検定
+            </Link>
+            <Link href="/mypage" className="text-xl  transition-colors hover:text-primary py-2 border-b-1 border-foreground">
+                マイページ
+            </Link>
+            <Link href="/access" className="text-xl  transition-colors hover:text-primary py-2 border-b-1 border-foreground">
+                アクセス
+            </Link>
+        </>
+    )
+
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="sticky top-0 z-50 w-full border-b bg-header-background/95 backdrop-blur supports-[backdrop-filter]:bg-white-background/60">
             <div className="container mx-auto px-4 flex h-14 items-center">
+                
                 <div className="mr-4 hidden md:flex">
+                    
                     <Link href="/" className="mr-6 flex items-center space-x-2">
+                        <div className='w-12'>
+                            <figure>
+                                <img src="1772606843056.jpg" alt="" />
+                            </figure>
+                        </div>
                         <span className="hidden font-bold sm:inline-block">NgtFes26</span>
                     </Link>
                     <nav className="flex items-center space-x-6 text-sm font-medium">
@@ -53,8 +80,13 @@ export const Header = () => {
                 </div>
 
                 {/* Mobile Menu */}
-                <div className="flex flex-1 items-center justify-between md:hidden">
+                <div className="flex flex-1 items-center justify-between md:hidden">       
                     <Link href="/" className="mr-2 flex items-center space-x-2">
+                        <div className='w-12'>
+                            <figure>
+                                <img src="1772606843056.jpg" alt="" />
+                            </figure>
+                        </div>
                         <span className="font-bold">NgtFes26</span>
                     </Link>
                     <Sheet>
@@ -65,8 +97,8 @@ export const Header = () => {
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="right">
-                            <div className="flex flex-col space-y-4 mt-4">
-                                <NavLinks />
+                            <div className="ml-6 flex flex-col space-y-4 mt-4">
+                                <NavLinksMobile />
                             </div>
                         </SheetContent>
                     </Sheet>
@@ -115,7 +147,7 @@ const AuthButton = () => {
     }
 
     return (
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline" size="sm" className='bg-white'>
             <Link href="/mypage">
                 {nickname || 'マイページ'}
             </Link>

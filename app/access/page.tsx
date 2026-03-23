@@ -44,7 +44,7 @@ export default function Access(){
             </section>
 
             {/* 注意事項 */}
-            <section className="bg-muted/50 w-full py-6">
+            <section className="bg-muted w-full py-6">
                 <div className="mx-5">
                     <div>
                         <h1 className="font-bold text-3xl px-4">Caution</h1>

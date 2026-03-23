@@ -60,7 +60,7 @@ export function NewsList() {
             {news.map((item) => (
                 <div
                     key={item.news_id}
-                    className={`bg-background p-4 rounded-lg border shadow-sm ${item.is_important ? 'border-l-4 border-l-red-500 bg-red-50/50' : ''}`}
+                    className={`bg-white p-4 rounded-lg border shadow-sm ${item.is_important ? 'border-l-4 border-l-red-500 bg-red-50/50' : ''}`}
                 >
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs text-muted-foreground">
