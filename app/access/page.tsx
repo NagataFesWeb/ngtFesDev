@@ -71,11 +71,17 @@ export default function Access(){
                             <ul className="text-left text-lg space-y-4">
                                 <li className="flex items-start">
                                     <span className="mr-2 mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />
-                                    <span>ここに注意を記入</span>
+                                    <span>
+                                        今年度の文化祭は在校生による招待制となります。<br />
+                                        招待チケットをお持ちでない方は入場いただけません。<br />
+                                        OB・OGの方についても、同様にご遠慮いただいております。
+                                    </span>
                                 </li>
                                 <li className="flex items-start">
                                     <span className="mr-2 mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />
-                                    <span>etc..</span>
+                                    <span>
+                                        中学生の方は生徒手帳、申し込み完了画面 (印刷も可能)をお持ちください。
+                                    </span>
                                 </li>
                             </ul>
                         </div>
