@@ -61,7 +61,12 @@ export const Header = () => {
         {/* PC用ロゴ & メニュー */}
         <div className="flex items-center">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold text-lg">NgtFes26</span>
+            <div className="w-10 lg:w-12">
+              <figure>
+                <img src="/1772606843056.jpg" alt="Logo" className="w-full h-auto rounded-full" />
+              </figure>
+            </div>
+            <span className="hidden sm:inline-block font-bold text-lg">NgtFes26</span>
           </Link>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <NavLinks />
@@ -146,7 +151,7 @@ const AuthButton = () => {
   }
 
   return (
-    <Button asChild variant="outline" size="sm">
+    <Button asChild variant="outline" size="sm" className="bg-white">
       <Link href="/mypage">{nickname || "マイページ"}</Link>
     </Button>
   );

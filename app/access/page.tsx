@@ -2,8 +2,8 @@ import Image from "next/image";
 import ngtmap from "./ngtmap.png";
 import { CautionNotes } from "@/components/common/CautionNotes";
 
-export default function Access(){
-    return(
+export default function Access() {
+    return (
         <div className="flex flex-col">
             {/* アクセス */}
             <section className="w-full py-8">
@@ -12,8 +12,8 @@ export default function Access(){
                         <h1 className="font-bold text-3xl">Access</h1>
                         <h2 className="text-xl text-muted-foreground">アクセス</h2>
                     </div>
-                    
-                    <div className="flex justify-center items-center text-center mb-8">    
+
+                    <div className="flex justify-center items-center text-center mb-8">
                         <h3 className="border-b-2 text-2xl pb-2 w-full max-w-[1100px]">アクセス方法</h3>
                     </div>
 
@@ -43,15 +43,15 @@ export default function Access(){
                         </div>
                     </div>
 
-                    <div className="flex justify-center items-center text-center mt-12 mb-8"> 
+                    <div className="flex justify-center items-center text-center mt-12 mb-8">
                         <h3 className="text-2xl border-b-2 pb-2 w-full max-w-[1100px]">Googleマップで見る</h3>
                     </div>
                     <div className="flex justify-center">
                         <figure className="w-full max-w-[1000px]">
-                            <iframe 
-                                className="w-full aspect-video rounded-lg shadow-md" 
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6562.791832018688!2d135.14150147451699!3d34.669955884863974!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6000858f683ffc87%3A0x9f05c21ab04e7f09!2z5YW15bqr55yM56uL6ZW355Sw6auY562J5a2m5qCh!5e0!3m2!1sja!2sjp!4v1772976033214!5m2!1sja!2sjp"  
-                                style={{border:0}} 
+                            <iframe
+                                className="w-full aspect-video rounded-lg shadow-md"
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d6562.791832018688!2d135.14150147451699!3d34.669955884863974!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6000858f683ffc87%3A0x9f05c21ab04e7f09!2z5YW15bqr55yM56uL6ZW355Sw6auY562J5a2m5qCh!5e0!3m2!1sja!2sjp!4v1772976033214!5m2!1sja!2sjp"
+                                style={{ border: 0 }}
                                 loading="lazy"
                             ></iframe>
                         </figure>

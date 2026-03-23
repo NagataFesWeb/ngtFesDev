@@ -15,10 +15,10 @@ export default async function ProjectsPage() {
 
     return (
         <div className="flex flex-col">
-            <CautionNotes />
             <ProjectList
                 initialProjects={projectsWithStatus as any || []}
             />
+            <CautionNotes />
         </div>
     )
 }

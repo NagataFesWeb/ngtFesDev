@@ -27,7 +27,7 @@ export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectC
 
     return (
         <Link href={`/projects/${project.project_id}`}>
-            <Card className="h-full overflow-hidden transition-all hover:shadow-md hover:border-primary/50 flex flex-col">
+            <Card className="h-full overflow-hidden transition-all hover:shadow-md hover:border-primary/50 flex flex-col bg-gradient-to-b from-white from-80% to-logo-background to-20%">
                 {project.image_url && (
                     <div className="aspect-[4/3] w-full overflow-hidden bg-muted relative">
                         {/* Changed aspect-video to aspect-[4/3] for better poster visibility. 
@@ -62,7 +62,7 @@ export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectC
                         {project.description || '説明文がありません'}
                     </p>
                 </CardContent>
-                <CardFooter className="p-4 pt-0 mt-auto flex items-center justify-between border-t bg-muted/20 px-4 py-3">
+                <CardFooter className="p-4 pt-0 mt-auto flex items-center justify-between border-t bg-logo-background px-4 py-3">
                     <span className="text-xs text-muted-foreground">混雑状況</span>
                     <StatusIcon level={congestionLevel} showLabel />
                 </CardFooter>
