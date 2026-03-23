@@ -111,26 +111,30 @@ const AuthButton = () => {
   const [nickname, setNickname] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!session?.user) {
-      setNickname(null);
-      return;
-    }
+    let active = true;
 
-    const fetchProfile = async () => {
+    const loadNickname = async () => {
+      if (!session?.user) {
+        if (active) setNickname(null);
+        return;
+      }
+
       const { data } = await supabase
         .from("users")
         .select("display_name")
         .eq("user_id", session.user.id)
         .single<UserProfile>();
 
-      if (data?.display_name) {
-        setNickname(data.display_name);
-      } else {
-        setNickname(null);
-      }
+      if (!active) return;
+      setNickname(data?.display_name ?? null);
     };
-    fetchProfile();
-  }, [session?.user?.id]);
+
+    loadNickname();
+
+    return () => {
+      active = false;
+    };
+  }, [session?.user]);
 
   if (loading)
     return (
