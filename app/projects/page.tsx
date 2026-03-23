@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { ProjectList } from '@/components/project/ProjectList'
+import { CautionNotes } from '@/components/common/CautionNotes'
 
 // Revalidate every 60 seconds (ISR) - Congestion is handled by client-side realtime, so base data can be cached.
 export const revalidate = 60
@@ -13,8 +14,11 @@ export default async function ProjectsPage() {
     }
 
     return (
-        <ProjectList
-            initialProjects={projectsWithStatus as any || []}
-        />
+        <div className="flex flex-col">
+            <CautionNotes />
+            <ProjectList
+                initialProjects={projectsWithStatus as any || []}
+            />
+        </div>
     )
 }

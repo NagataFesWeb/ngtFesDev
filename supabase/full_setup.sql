@@ -18,6 +18,12 @@
 --   20260103130000_fix_news_and_schema.sql
 --   20260103140000_add_more_seed_data.sql
 --   20260205190000_remove_voting_feature.sql
+--   20260305132452_add_nagata_quiz_feature.sql
+--   20260305194836_update_users_table.sql
+--   20260305225400_add_quiz_ranking.sql
+--   20260305234800_add_quiz_rewards.sql
+--   20260306214500_add_operator_edit_setting.sql
+--   20260306214700_remove_voting_setting.sql
 --
 -- ※ 投票機能（votes テーブル、cast_vote、admin_get_vote_summary 等）は
 --    完全に除外されています。
@@ -60,7 +66,7 @@ $$ language 'plpgsql';
 -- 2.1 users（訪問者管理）
 CREATE TABLE IF NOT EXISTS public.users (
     user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    line_user_id TEXT UNIQUE,
+    login_id TEXT UNIQUE NOT NULL,
     display_name TEXT DEFAULT 'Guest',
     role TEXT DEFAULT 'guest' CHECK (role IN ('guest', 'admin')),
     created_at TIMESTAMPTZ DEFAULT now()
@@ -121,13 +127,14 @@ CREATE TABLE IF NOT EXISTS public.quiz_questions (
     correct_choice_index INTEGER NOT NULL CHECK (correct_choice_index BETWEEN 0 AND 3)
 );
 
--- 2.8 quiz_sessions（クイズセッション）
-CREATE TABLE IF NOT EXISTS public.quiz_sessions (
-    session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES public.users(user_id) ON DELETE CASCADE,
-    questions JSONB NOT NULL,       -- Array of question_ids
-    correct_answers JSONB NOT NULL, -- Map { q_id: correct_index }
-    expires_at TIMESTAMPTZ NOT NULL
+-- 2.8 quiz_rewards（クイズ報酬）
+CREATE TABLE IF NOT EXISTS public.quiz_rewards (
+    id SERIAL PRIMARY KEY,
+    required_score INTEGER NOT NULL,
+    title_name TEXT NOT NULL,
+    storage_path TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    CONSTRAINT unique_required_score UNIQUE (required_score)
 );
 
 -- 2.9 quiz_scores（クイズスコア）
@@ -138,6 +145,7 @@ CREATE TABLE IF NOT EXISTS public.quiz_scores (
     play_count INTEGER DEFAULT 0,
     updated_at TIMESTAMPTZ DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS idx_quiz_scores_total_score ON public.quiz_scores(total_score DESC);
 
 -- 2.10 operation_logs（操作ログ）
 CREATE TABLE IF NOT EXISTS public.operation_logs (
@@ -181,8 +189,8 @@ ALTER TABLE public.congestion ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.fastpass_slots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.fastpass_tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quiz_questions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.quiz_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quiz_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.quiz_rewards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.operation_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.news ENABLE ROW LEVEL SECURITY;
@@ -192,6 +200,7 @@ CREATE POLICY "Public can view projects" ON public.projects FOR SELECT USING (tr
 CREATE POLICY "Public can view congestion" ON public.congestion FOR SELECT USING (true);
 CREATE POLICY "Public can view fastpass_slots" ON public.fastpass_slots FOR SELECT USING (true);
 CREATE POLICY "Public can view quiz_questions" ON public.quiz_questions FOR SELECT USING (true);
+CREATE POLICY "Allow read for all authenticated users" ON public.quiz_rewards FOR SELECT TO authenticated USING (true);
 
 -- ユーザーポリシー
 CREATE POLICY "Users can view own profile" ON public.users FOR SELECT USING (user_id = auth.uid());
@@ -235,11 +244,34 @@ CREATE POLICY "Admins can manage news" ON public.news
 
 -- 4.1 auth.users へのサインアップ時に public.users へ自動挿入
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS trigger AS $$
+DECLARE
+  v_login_id TEXT;
+  v_display_name TEXT;
 BEGIN
-    INSERT INTO public.users (user_id, display_name)
-    VALUES (new.id, new.raw_user_meta_data->>'full_name');
-    RETURN new;
+  -- raw_user_meta_data から login_id を取得するか、email の @ より前を利用する
+  v_login_id := coalesce(
+    new.raw_user_meta_data->>'login_id',
+    split_part(new.email, '@', 1)
+  );
+
+  -- 空チェック
+  IF v_login_id IS NULL OR length(trim(v_login_id)) = 0 THEN
+    v_login_id := 'guest_' || substr(gen_random_uuid()::text, 1, 8);
+  END IF;
+
+  v_display_name := coalesce(new.raw_user_meta_data->>'full_name', 'Guest');
+
+  INSERT INTO public.users (user_id, login_id, display_name)
+  VALUES (
+    new.id, 
+    v_login_id,
+    v_display_name
+  );
+  RETURN new;
+EXCEPTION WHEN OTHERS THEN
+  RAISE LOG 'Error in handle_new_user. user_id: %, login_id: %, Error: %', new.id, v_login_id, SQLERRM;
+  RAISE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -458,19 +490,49 @@ $$;
 -- SECTION 7: RPC 関数（クイズ系）
 -- =============================================================================
 
--- 7.1 クイズスコア提出（機能トグル対応済み）
-CREATE OR REPLACE FUNCTION public.submit_quiz_score(p_answers JSONB)
+-- 7.1 クイズ問題取得 (ランダム出題＆ハッシュ化正解)
+CREATE OR REPLACE FUNCTION public.get_quiz_questions()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_salt TEXT := 'NgtFes26_Quiz_Salt';
+    v_questions JSONB;
+BEGIN
+    SELECT jsonb_agg(
+        jsonb_build_object(
+            'q_id', question_id,
+            'text', question_text,
+            'choices', choices,
+            'correct_hash', encode(digest(question_id::text || correct_choice_index::text || v_salt, 'sha256'), 'hex')
+        )
+    )
+    INTO v_questions
+    FROM (
+        SELECT * FROM public.quiz_questions
+        ORDER BY random()
+        LIMIT 10
+    ) q;
+
+    RETURN coalesce(v_questions, '[]');
+END;
+$$;
+
+-- 7.2 クイズスコア提出 (Rate Limiting と Signature Verification)
+CREATE OR REPLACE FUNCTION public.submit_quiz_score(p_score INTEGER, p_signature TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
     v_user_id UUID;
-    v_total_score INTEGER := 0;
-    v_correct_count INTEGER := 0;
-    v_question RECORD;
-    v_answer_record RECORD;
-    v_user_answer INTEGER;
+    v_server_secret TEXT := 'NgtFes26_Super_Secret_Key'; -- 運用時は環境変数等から参照すべきだが簡易化
+    v_expected_signature TEXT;
+    v_last_played TIMESTAMPTZ;
+    v_current_total INTEGER;
+    v_current_highest INTEGER;
+    v_current_play_count INTEGER;
     v_enabled BOOLEAN;
 BEGIN
     -- 機能トグルチェック
@@ -487,62 +549,113 @@ BEGIN
 
     v_user_id := auth.uid();
     IF v_user_id IS NULL THEN
-         RAISE EXCEPTION 'Not authenticated';
+        RAISE EXCEPTION 'Not authenticated';
     END IF;
 
-    -- 回答を1件ずつ採点
-    FOR v_answer_record IN SELECT * FROM jsonb_each_text(p_answers)
-    LOOP
-        SELECT correct_choice_index INTO v_question
-        FROM public.quiz_questions
-        WHERE question_id = v_answer_record.key::INTEGER;
+    -- パラメータバリデーション
+    IF p_score < 0 OR p_score > 10 THEN
+        RETURN jsonb_build_object('status', 400, 'message', 'Invalid score');
+    END IF;
 
-        IF FOUND THEN
-            v_user_answer := v_answer_record.value::INTEGER;
-            IF v_question.correct_choice_index = v_user_answer THEN
-                v_total_score := v_total_score + 10;
-                v_correct_count := v_correct_count + 1;
-            END IF;
-        END IF;
-    END LOOP;
+    -- 1. シグネチャの検証 (HMAC-SHA256)
+    v_expected_signature := encode(hmac(v_user_id::text || p_score::text, v_server_secret, 'sha256'), 'hex');
+    IF p_signature != v_expected_signature THEN
+        RETURN jsonb_build_object('status', 403, 'message', 'Invalid signature');
+    END IF;
 
-    -- スコアをアップサート
+    -- 2. Rate Limiting チェック
+    SELECT updated_at INTO v_last_played FROM public.quiz_scores WHERE user_id = v_user_id;
+    IF FOUND AND v_last_played > now() - interval '1 minute' THEN
+        RETURN jsonb_build_object('status', 429, 'message', 'Please wait before playing again');
+    END IF;
+
+    -- 3. スコアの更新 (UPSERT)
     INSERT INTO public.quiz_scores (user_id, highest_score, total_score, play_count, updated_at)
-    VALUES (v_user_id, v_total_score, v_total_score, 1, now())
-    ON CONFLICT (user_id) DO UPDATE SET
-        highest_score = GREATEST(public.quiz_scores.highest_score, EXCLUDED.highest_score),
-        total_score = public.quiz_scores.total_score + EXCLUDED.total_score,
-        play_count = public.quiz_scores.play_count + 1,
-        updated_at = now();
+    VALUES (v_user_id, p_score, p_score, 1, now())
+    ON CONFLICT (user_id) DO UPDATE 
+    SET 
+        highest_score = GREATEST(quiz_scores.highest_score, EXCLUDED.highest_score),
+        total_score = quiz_scores.total_score + EXCLUDED.total_score,
+        play_count = quiz_scores.play_count + 1,
+        updated_at = now()
+    RETURNING total_score, highest_score, play_count 
+    INTO v_current_total, v_current_highest, v_current_play_count;
 
     RETURN jsonb_build_object(
-        'score', v_total_score,
-        'correct_count', v_correct_count,
-        'status', 'success'
+        'status', 'success',
+        'score', p_score,
+        'total_score', v_current_total,
+        'highest_score', v_current_highest,
+        'play_count', v_current_play_count
     );
 END;
 $$;
 
--- 7.2 クイズランキング取得（total_score 順）
+-- 7.3 クイズランキング取得（total_score 順）
 CREATE OR REPLACE FUNCTION public.get_quiz_ranking()
 RETURNS TABLE (
     display_name TEXT,
+    total_score INTEGER,
     highest_score INTEGER,
-    total_score INTEGER
+    play_count INTEGER
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT
+    SELECT 
         u.display_name,
+        qs.total_score,
         qs.highest_score,
-        qs.total_score
-    FROM public.quiz_scores qs
-    JOIN public.users u ON qs.user_id = u.user_id
-    ORDER BY qs.total_score DESC, qs.highest_score DESC
-    LIMIT 10;
+        qs.play_count
+    FROM 
+        public.quiz_scores qs
+    JOIN 
+        public.users u ON qs.user_id = u.user_id
+    ORDER BY 
+        qs.total_score DESC
+    LIMIT 3;
+END;
+$$;
+
+-- 7.4 クイズリワードURL取得
+CREATE OR REPLACE FUNCTION public.get_quiz_reward_url(p_reward_id INT)
+RETURNS TABLE (
+    signed_url TEXT,
+    expires_in INT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_user_id UUID;
+    v_total_score INT;
+    v_required_score INT;
+    v_storage_path TEXT;
+BEGIN
+    v_user_id := auth.uid();
+    
+    -- Get user score
+    SELECT total_score INTO v_total_score FROM public.quiz_scores WHERE user_id = v_user_id;
+    IF v_total_score IS NULL THEN v_total_score := 0; END IF;
+    
+    -- Get reward reqs
+    SELECT required_score, storage_path INTO v_required_score, v_storage_path 
+    FROM public.quiz_rewards WHERE id = p_reward_id;
+    
+    IF v_required_score IS NULL THEN
+        RAISE EXCEPTION 'REWARD_NOT_FOUND' USING ERRCODE = 'P0002';
+    END IF;
+    
+    -- Check eligibility
+    IF v_total_score < v_required_score THEN
+        RAISE EXCEPTION 'INSUFFICIENT_SCORE' USING ERRCODE = '42501';
+    END IF;
+    
+    -- Return the storage_path. The client side will then call 
+    -- supabase.storage.from('quiz-rewards').createSignedUrl(path, 3600).
+    RETURN QUERY SELECT v_storage_path, 3600;
 END;
 $$;
 
@@ -687,7 +800,6 @@ BEGIN
     END IF;
 
     IF p_target_table = 'all' THEN
-        DELETE FROM public.quiz_sessions;
         DELETE FROM public.quiz_scores;
     END IF;
 
@@ -880,6 +992,21 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
+-- quiz-rewards バケット作成
+DO $$
+BEGIN
+    INSERT INTO storage.buckets (id, name, public)
+    VALUES ('quiz-rewards', 'quiz-rewards', false)
+    ON CONFLICT (id) DO NOTHING;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    CREATE POLICY "Authenticated users can read rewards" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'quiz-rewards');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
 
 -- =============================================================================
 -- SECTION 11: 初期データ（シードデータ）
@@ -887,8 +1014,9 @@ END $$;
 
 -- 11.1 システム設定（投票機能は除外）
 INSERT INTO public.system_settings (key, value, description) VALUES
-('quiz_enabled',     'true'::jsonb, 'Enable or disable quiz feature'),
-('fastpass_enabled', 'true'::jsonb, 'Enable or disable fastpass issuance')
+('quiz_enabled',          'true'::jsonb, 'Enable or disable quiz feature'),
+('fastpass_enabled',      'true'::jsonb, 'Enable or disable fastpass issuance'),
+('operator_edit_enabled', 'true'::jsonb, '運営者による企画情報（説明文・画像）の編集を許可する')
 ON CONFLICT (key) DO NOTHING;
 
 -- 11.2 クラスデータ（2年・3年）
@@ -961,10 +1089,30 @@ WHERE NOT EXISTS (
 );
 
 -- Quiz Questions
-INSERT INTO public.quiz_questions (question_text, choices, correct_choice_index) VALUES
-('長田高校の創立年は？', '["1918", "1920", "1921", "1945"]'::jsonb, 1),
-('文化祭の名前は？', '["長田フェス", "文化祭", "神撫祭", "体育祭"]'::jsonb, 0)
-ON CONFLICT DO NOTHING;
+INSERT INTO public.quiz_questions (question_text, choices, correct_choice_index) VALUES 
+('長田高校の創立年はいつでしょうか？', '["1918年", "1920年", "1921年", "1945年"]'::jsonb, 2),
+('長田高校の校訓として正しいものはどれ？', '["自主・自律", "質実剛健", "文武両道", "神武不殺"]'::jsonb, 0),
+('長田高校の象徴的な建物である「神撫台（しんぶだい）」の由来は？', '["近くの山の名前", "創立者の名前", "地元の神社の名前", "神戸の古い地名"]'::jsonb, 0),
+('長田高校の制服（冬服）の特徴的な色は？', '["ネイビーブルー", "チャコールグレー", "ブラック", "ダークグリーン"]'::jsonb, 0),
+('長田祭（文化祭）の通例の開催時期は？', '["4月上旬", "6月中旬", "9月上旬", "11月下旬"]'::jsonb, 1),
+('長田高校の生徒会にあたる組織の名称は？', '["自治会", "生徒協議会", "学友会", "中央委員会"]'::jsonb, 0),
+('長田高校の校章にデザインされている植物は？', '["桜", "梅", "松", "菊"]'::jsonb, 2),
+('長田高校のグラウンドの特徴は？', '["全面人工芝", "非常に広い土のグラウンド", "地下にある", "陸上トラックが青色"]'::jsonb, 1),
+('長田高校の最寄りの鉄道駅はどれ？', '["長田駅", "高速長田駅", "板宿駅", "新長田駅"]'::jsonb, 1),
+('長田高校の部活動で、全国大会の常連として有名な文化部は？', '["吹奏楽部", "音楽部(合唱)", "演劇部", "書道部"]'::jsonb, 1),
+('長田高校周辺で人気のご当地グルメはどれ？', '["そばめし", "明石焼き", "神戸牛バーガー", "豚まん"]'::jsonb, 0),
+('長田高校の生徒手帳の表紙の色は？', '["えんじ色", "紺色", "黒色", "深緑色"]'::jsonb, 0);
+
+-- Quiz Rewards
+INSERT INTO public.quiz_rewards (required_score, title_name, storage_path)
+VALUES 
+    (10, 'ブロンズ', 'bronze_Nagata_WP.png'),
+    (30, 'シルバー', 'silver_Nagata_WP.png'),
+    (60, 'ゴールド', 'gold_Nagata_WP.png'),
+    (100, 'マスター', 'master_Nagata_WP.png')
+ON CONFLICT (required_score) DO UPDATE SET 
+    storage_path = EXCLUDED.storage_path,
+    title_name = EXCLUDED.title_name;
 
 
 -- 11.6 ファストパルスロットの自動生成 (from seed_slots.sql)

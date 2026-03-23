@@ -12,21 +12,21 @@ export interface Database {
             users: {
                 Row: {
                     user_id: string
-                    line_user_id: string | null
+                    login_id: string
                     display_name: string | null
                     role: 'guest' | 'admin'
                     created_at: string
                 }
                 Insert: {
                     user_id?: string
-                    line_user_id?: string | null
+                    login_id: string
                     display_name?: string | null
                     role?: 'guest' | 'admin'
                     created_at?: string
                 }
                 Update: {
                     user_id?: string
-                    line_user_id?: string | null
+                    login_id?: string
                     display_name?: string | null
                     role?: 'guest' | 'admin'
                     created_at?: string

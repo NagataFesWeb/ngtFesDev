@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ type RankingItem = {
     highest_score: number
 }
 
-export default function QuizResultPage() {
+function QuizResultContent() {
     const params = useSearchParams()
     const router = useRouter()
 
@@ -90,5 +90,13 @@ export default function QuizResultPage() {
                 </Button>
             </div>
         </div>
+    )
+}
+
+export default function QuizResultPage() {
+    return (
+        <Suspense fallback={<div className="flex justify-center items-center min-h-[calc(100vh-3.5rem)]"><LoadingSpinner /></div>}>
+            <QuizResultContent />
+        </Suspense>
     )
 }
