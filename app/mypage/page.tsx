@@ -43,7 +43,7 @@ export default function MyPage() {
                 .single()
 
             if (userData && 'display_name' in userData) {
-                setDisplayName((userData as any).display_name || '')
+                setDisplayName((userData.display_name as string) || '')
             }
         }
 
@@ -63,7 +63,7 @@ export default function MyPage() {
                 .eq('used', false)
 
             if (!error && data) {
-                setTickets(data as any)
+                setTickets(data as FastPassTicket[])
             }
             setLoading(false)
         }
@@ -78,8 +78,8 @@ export default function MyPage() {
         if (!session?.user) return
         setSaving(true)
         try {
-            const { error } = await (supabase
-                .from('users') as any)
+            const { error } = await supabase
+                .from('users')
                 .update({ display_name: displayName })
                 .eq('user_id', session.user.id)
 
