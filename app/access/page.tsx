@@ -1,6 +1,6 @@
 import Image from "next/image";
 import ngtmap from "./ngtmap.png";
-
+import { CautionNotes } from "@/components/common/CautionNotes";
 
 export default function Access(){
     return(
@@ -60,34 +60,7 @@ export default function Access(){
             </section>
 
             {/* 注意事項 */}
-            <section className="bg-muted/50 w-full py-12">
-                <div className="container mx-auto px-4 md:px-6">
-                    <div className="mb-8">
-                        <h1 className="font-bold text-3xl">Caution</h1>
-                        <h2 className="text-xl text-muted-foreground">注意事項</h2>
-                    </div>
-                    <div className="flex justify-center">
-                        <div className="w-full max-w-[800px] bg-background p-6 md:p-8 rounded-xl shadow-sm border">
-                            <ul className="text-left text-lg space-y-4">
-                                <li className="flex items-start">
-                                    <span className="mr-2 mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />
-                                    <span>
-                                        今年度の文化祭は在校生による招待制となります。<br />
-                                        招待チケットをお持ちでない方は入場いただけません。<br />
-                                        OB・OGの方についても、同様にご遠慮いただいております。
-                                    </span>
-                                </li>
-                                <li className="flex items-start">
-                                    <span className="mr-2 mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />
-                                    <span>
-                                        中学生の方は生徒手帳、申し込み完了画面 (印刷も可能)をお持ちください。
-                                    </span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <CautionNotes />
         </div>
     )
 }
