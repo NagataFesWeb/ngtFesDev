@@ -55,11 +55,7 @@ const MobileNavLinks = () => (
 );
 
 export const Header = () => {
-  const { session } = useSession();
   const pathname = usePathname();
-
-  const isOperator = pathname?.startsWith("/operator");
-  const isAdmin = pathname?.startsWith("/admin");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
