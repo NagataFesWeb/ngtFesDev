@@ -11,9 +11,48 @@ import {
 } from "@/components/ui/sheet";
 import { useSession } from "@/contexts/SessionContext";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+
+const NavLinks = () => (
+  <>
+    <Link href="/" className="text-sm font-medium transition-colors hover:text-primary">
+      トップ
+    </Link>
+    <Link href="/projects" className="text-sm font-medium transition-colors hover:text-primary">
+      企画一覧
+    </Link>
+    <Link href="/quiz" className="text-sm font-medium transition-colors hover:text-primary">
+      長田検定
+    </Link>
+    <Link href="/mypage" className="text-sm font-medium transition-colors hover:text-primary">
+      マイページ
+    </Link>
+    <Link href="/access" className="text-sm font-medium transition-colors hover:text-primary">
+      アクセス
+    </Link>
+  </>
+);
+
+const MobileNavLinks = () => (
+  <>
+    <Link href="/" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      トップ
+    </Link>
+    <Link href="/projects" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      企画一覧
+    </Link>
+    <Link href="/quiz" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      長田検定
+    </Link>
+    <Link href="/mypage" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      マイページ
+    </Link>
+    <Link href="/access" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      アクセス
+    </Link>
+  </>
+);
 
 export const Header = () => {
   const { session } = useSession();
@@ -21,43 +60,6 @@ export const Header = () => {
 
   const isOperator = pathname?.startsWith("/operator");
   const isAdmin = pathname?.startsWith("/admin");
-
-  const NavLinks = () => (
-    <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
-      <Link href="/" className="w-full md:w-auto py-1 text-sm font-medium hover:text-primary transition-colors">
-        トップ
-      </Link>
-      <Link href="/projects" className="w-full md:w-auto py-1 text-sm font-medium hover:text-primary transition-colors">
-        企画一覧
-      </Link>
-      <Link href="/quiz" className="w-full md:w-auto py-1 text-sm font-medium hover:text-primary transition-colors">
-        長田検定
-      </Link>
-      <Link href="/mypage" className="w-full md:w-auto py-1 text-sm font-medium hover:text-primary transition-colors">
-        マイページ
-      </Link>
-    </div>
-  );
-
-  const MobileNavLinks = () => (
-    <>
-      <Link href="/" className="block py-2 text-base font-medium transition-colors hover:text-primary">
-        トップ
-      </Link>
-      <Link href="/projects" className="block py-2 text-base font-medium transition-colors hover:text-primary">
-        企画一覧
-      </Link>
-      <Link href="/quiz" className="block py-2 text-base font-medium transition-colors hover:text-primary">
-        長田検定
-      </Link>
-      <Link href="/mypage" className="block py-2 text-base font-medium transition-colors hover:text-primary">
-        マイページ
-      </Link>
-      <Link href="/access" className="block py-2 text-base font-medium transition-colors hover:text-primary">
-        アクセス
-      </Link>
-    </>
-  );
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -100,6 +102,10 @@ export const Header = () => {
   );
 };
 
+interface UserProfile {
+  display_name: string | null;
+}
+
 const AuthButton = () => {
   const { session, loading } = useSession();
   const [nickname, setNickname] = useState<string | null>(null);
@@ -115,14 +121,16 @@ const AuthButton = () => {
         .from("users")
         .select("display_name")
         .eq("user_id", session.user.id)
-        .single();
+        .single<UserProfile>();
 
-      if ((data as any)?.display_name) {
-        setNickname((data as any).display_name);
+      if (data?.display_name) {
+        setNickname(data.display_name);
+      } else {
+        setNickname(null);
       }
     };
     fetchProfile();
-  }, [session]);
+  }, [session?.user?.id]);
 
   if (loading)
     return (

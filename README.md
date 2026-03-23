@@ -16,7 +16,7 @@
 
 ```bash
 # プロジェクトフォルダへ移動
-cd TestWeb
+cd ngtFesDev
 ```
 
 ### 2. 依存パッケージのインストール
@@ -40,23 +40,45 @@ SUPABASE_SERVICE_ROLE_KEY=あなたのSupabase Service Role Key (Backend用)
 ### 4. データベースの準備 (Database Setup)
 
 Supabaseプロジェクトにテーブル定義と初期データを適用する必要があります。
-**Supabase Dashboard > SQL Editor** を開き、以下の順序でSQLスクリプトを実行してください。
+本プロジェクトでは、すべてのスキーマ定義、必要なRPC関数、およびシードデータが1つのSQLファイルに統合されています。
 
-1.  **初期スキーマの適用**:
-    *   `supabase/migrations/20251231190000_init_schema.sql`
-    *   `supabase/migrations/20260103130000_fix_news_and_schema.sql` (テーブル修正・ヘルパー関数)
+以下のいずれかの方法で、**`supabase/full_setup.sql`** を実行してデータベースを初期化してください。
 
-2.  **RPC（機能）の追加**:
-    *   `supabase/migrations/20260103100000_add_wait_time.sql` (待ち時間計算)
-    *   `supabase/migrations/20260103103000_add_list_rpc.sql` (プロジェクト一覧取得)
-    *   `supabase/migrations/20260103110000_update_ranking_rpc.sql` (ランキングロジック)
+**方法A: Supabase Dashboardから実行する（推奨）**
+1. **Supabase Dashboard > SQL Editor** を開きます。
+2. `supabase/full_setup.sql` の内容をコピーし、エディタに貼り付けて実行（Run）します。
 
-3.  **基礎データの投入 (重要)**:
-    *   `supabase/seed.sql` (基本データ)
-    *   `supabase/migrations/20260103140000_add_more_seed_data.sql` (追加シードデータ: 2年・3年)
-    *   *(任意)* `supabase/seed_slots.sql` (整理券スロットデータ)
+**方法B: CLI (psql) を使用して実行する**
+ターミナルで以下のコマンドを実行し、ファイルを適用します。
+実行前に、`<YOUR_DB_PASSWORD>` や `<YOUR_PROJECT_REF>` をご自身のSupabaseプロジェクトの情報に書き換えてください。
 
-### 5. 開発サーバーの起動
+```bash
+# PGPASSWORD環境変数を設定してpsqlコマンドを実行します
+PGPASSWORD="<YOUR_DB_PASSWORD>" psql -h db.<YOUR_PROJECT_REF>.supabase.co -p 5432 -d postgres -U postgres -f supabase/full_setup.sql
+```
+
+> [!NOTE]
+> `full_setup.sql` には、必要なマイグレーション手順と初期データがすべて含まれています。これを実行するだけで、必須テーブルの構築からクイズ機能・ファストパスの初期設定までが完了します。
+
+### 6. クイズ報酬（壁紙）のセットアップ (Storage Setup)
+
+クイズの累計スコア報酬として配布する壁紙画像をSupabase Storageに配置する必要があります。
+
+1.  **バケットの作成**:
+    *   Supabase Dashboardの **Storage** を開き、`quiz-rewards` という名前のバケットを作成してください。
+    *   **Public access** は **OFF**（非公開）に設定してください。
+2.  **画像のアップロード**:
+    *   以下の4つのファイルを `quiz-rewards` バケットの**ルート直下**にアップロードしてください。
+    *   ファイル名は**完全に一致**している必要があります：
+        *   `bronze_Nagata_WP.png`
+        *   `silver_Nagata_WP.png`
+        *   `gold_Nagata_WP.png`
+        *   `master_Nagata_WP.png`
+
+> [!NOTE]
+> 画像アセットがない場合は、ダミー画像を配置するか、開発者に確認してください。
+
+### 7. 開発サーバーの起動
 
 以下のコマンドで開発サーバーを起動します。
 
@@ -64,7 +86,45 @@ Supabaseプロジェクトにテーブル定義と初期データを適用する
 npm run dev
 ```
 
-起動後、ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスしてください。
+
+#### (i) PCでのアクセス方法
+
+起動後、ブラウザで以下にアクセスしてください。
+
+```
+http://localhost:3000
+```
+
+
+#### (ii) モバイル端末・他デバイスからのアクセス方法
+
+実機テスト（カメラ機能やレスポンシブ確認）を行う場合は、以下のいずれかの方法を利用してください。
+
+### 方法A：同一Wi-Fi経由でアクセスする
+
+PCとモバイル端末を同じWi-Fiに接続し、PCのIPアドレスを使用してアクセスします。
+
+#### 1. IPアドレスを確認する
+- **Windows**: `ipconfig` を実行し **IPv4 アドレス** を確認  
+- **Mac**: `ifconfig` またはシステム設定から確認  
+
+#### 2. スマホでアクセスする
+- ブラウザで `http://[PCのIPアドレス]:3000` を開く
+  - 例) `http://192.168.1.15:3000`
+
+
+### 方法B：VS Codeのポート転送機能を利用する（HTTPS必須の場合）
+
+QRコードの読み取り（カメラ起動）など、HTTPS通信が必要な機能をテストする際に使用します。
+
+1. VS Code下部パネルの **[ポート (Ports)]** タブを選択。  
+2. **[ポートの前方参照 (Forward a Port)]** をクリックし、`3000` を入力。  
+   > ※初回利用時には「GitHubへのサインイン」を求められる場合があります。案内に従って連携してください。
+3. 追加された項目を右クリックし、以下を設定します：
+   - **[ポートプロトコルの変更 (Change Port Protocol)]** を **[HTTP]** に変更。
+   - **[ポートの表示範囲 (Port Visibility)]** を **[パブリック (Public)]** に変更。
+4. **[転送されたアドレス]** に表示される `https://...` のURLにスマホからアクセス。  
+   > ※「パブリック」にすると、URLを知っている人なら誰でもあなたの開発画面にアクセスできるようになります。作業が終わったら、VS Codeを閉じるか転送を停止するのを忘れないようにしましょう。
 
 ## 🔑 主要なアクセスURL
 

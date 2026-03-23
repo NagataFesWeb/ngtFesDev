@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { QRScanner } from '@/components/operator/QRScanner'
-import { StatusIcon } from '@/components/common/StatusIcon'
+
 import { toast } from 'sonner'
 import { useRef } from 'react'
-import { Users, Ticket, CheckCircle2, XCircle, Edit, Upload, ImageIcon } from 'lucide-react'
+import { Users, Ticket, CheckCircle2, XCircle, Edit, Upload, ImageIcon, Lock } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -21,10 +21,11 @@ export default function OperatorDashboard() {
     const { operatorToken, className, projectId, loading: authLoading } = useOperator()
     const router = useRouter()
 
-    const [currentCongestion, setCurrentCongestion] = useState<number>(1)
+
     const [loading, setLoading] = useState(true)
     const [processingTicket, setProcessingTicket] = useState(false)
     const [scanResult, setScanResult] = useState<{ status: string, message?: string, project?: string } | null>(null)
+    const [isEditEnabled, setIsEditEnabled] = useState(true)
 
     useEffect(() => {
         if (!authLoading && !operatorToken) {
@@ -33,40 +34,23 @@ export default function OperatorDashboard() {
     }, [operatorToken, authLoading, router])
 
     useEffect(() => {
-        // Need to fetch current project status.
-        // But we don't know project_id from operatorToken directly unless we fetch it.
-        // operator_login returned class_name, but mostly we need project_id.
-        // Let's rely on `operator_update_congestion` to return error if not linked.
-        // For display, we prob need an RPC `get_operator_project_status`.
-        // For MVP, just default to 1 and let update set it.
-        // OR, we can try to fetch from public.congestion by joining with classes? No RLS might block.
-        // Let's just implement update for now.
+        const fetchSettings = async () => {
+            const { data, error } = await supabase
+                .from('system_settings')
+                .select('value')
+                .eq('key', 'operator_edit_enabled')
+                .single()
+
+            if (!error && data) {
+                const s = data as any
+                setIsEditEnabled(s.value === true || s.value === 'true')
+            }
+        }
+        fetchSettings()
         setLoading(false)
     }, [])
 
-    const handleUpdateCongestion = async (level: number) => {
-        try {
-            // Optimistic UI
-            const oldLevel = currentCongestion
-            setCurrentCongestion(level)
 
-            const { data, error } = await supabase.rpc('operator_update_congestion', {
-                p_operator_token: operatorToken,
-                p_level: level
-            } as any)
-
-            if (error) throw error
-
-            const res = data as any
-            if (res.status !== 'updated') {
-                throw new Error(res.message || 'Error updating')
-            }
-            toast.success('混雑状況を更新しました')
-        } catch (err: any) {
-            toast.error('更に失敗しました: ' + err.message)
-            // Revert?
-        }
-    }
 
     const handleScan = async (qrToken: string) => {
         setProcessingTicket(true)
@@ -107,43 +91,12 @@ export default function OperatorDashboard() {
 
             <Tabs defaultValue="status" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="status">混雑・受付</TabsTrigger>
+                    <TabsTrigger value="status">受付</TabsTrigger>
                     <TabsTrigger value="edit">情報編集</TabsTrigger>
                     <TabsTrigger value="preview">プレビュー</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="status" className="space-y-6 mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center">
-                                <Users className="mr-2 h-5 w-5" /> 混雑状況の更新
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="mb-4 text-sm text-muted-foreground">
-                                <p className="mb-2">現在の混雑状況を選択してください。来場者ページにリアルタイムで反映されます。</p>
-                                <ul className="list-disc list-inside text-xs space-y-1 bg-muted p-2 rounded-md">
-                                    <li><strong>空いている (LVL1)</strong>: 収容人数の20%未満</li>
-                                    <li><strong>普通 (LVL2)</strong>: 収容人数の20%〜80%</li>
-                                    <li><strong>混雑 (LVL3)</strong>: 収容人数の80%以上</li>
-                                </ul>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4">
-                                {[1, 2, 3].map((level) => (
-                                    <Button
-                                        key={level}
-                                        variant={currentCongestion === level ? "default" : "outline"}
-                                        className={`h-24 flex flex-col items-center justify-center gap-2 ${currentCongestion === level ? 'ring-2 ring-offset-2' : ''}`}
-                                        onClick={() => handleUpdateCongestion(level)}
-                                    >
-                                        <StatusIcon level={level} className="w-8 h-8" />
-                                        <span>{level === 1 ? '空いている' : level === 2 ? '普通' : '混雑'}</span>
-                                    </Button>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center">
@@ -180,7 +133,7 @@ export default function OperatorDashboard() {
                 </TabsContent>
 
                 <TabsContent value="edit" className="mt-4">
-                    <EditProjectCard operatorToken={operatorToken!} projectId={projectId} />
+                    <EditProjectCard operatorToken={operatorToken!} projectId={projectId} isEditEnabled={isEditEnabled} />
                 </TabsContent>
 
                 <TabsContent value="preview" className="mt-4">
@@ -195,7 +148,7 @@ export default function OperatorDashboard() {
     )
 }
 
-function EditProjectCard({ operatorToken, projectId }: { operatorToken: string, projectId: string | null }) {
+function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operatorToken: string, projectId: string | null, isEditEnabled: boolean }) {
     const [description, setDescription] = useState('')
     const [imageUrl, setImageUrl] = useState('')
     const [uploading, setUploading] = useState(false)
@@ -270,8 +223,15 @@ function EditProjectCard({ operatorToken, projectId }: { operatorToken: string, 
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center">
-                    <Edit className="mr-2 h-5 w-5" /> 企画情報の編集
+                <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center">
+                        <Edit className="mr-2 h-5 w-5" /> 企画情報の編集
+                    </div>
+                    {!isEditEnabled && (
+                        <div className="flex items-center text-xs text-destructive font-bold bg-destructive/10 px-2 py-1 rounded">
+                            <Lock className="w-3 h-3 mr-1" /> 管理者によりロック中
+                        </div>
+                    )}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -282,6 +242,7 @@ function EditProjectCard({ operatorToken, projectId }: { operatorToken: string, 
                         value={description}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
                         rows={5}
+                        disabled={!isEditEnabled}
                     />
                 </div>
 
@@ -301,7 +262,7 @@ function EditProjectCard({ operatorToken, projectId }: { operatorToken: string, 
                                 accept="image/*"
                                 ref={fileInputRef}
                                 onChange={handleImageUpload}
-                                disabled={uploading}
+                                disabled={uploading || !isEditEnabled}
                             />
                             <p className="text-xs text-muted-foreground">
                                 ※推奨サイズ: 16:9 (1200x675px)<br />
@@ -311,8 +272,8 @@ function EditProjectCard({ operatorToken, projectId }: { operatorToken: string, 
                     </div>
                 </div>
 
-                <Button className="w-full" onClick={handleSave} disabled={saving || uploading}>
-                    {saving ? '保存中...' : '変更を保存'}
+                <Button className="w-full" onClick={handleSave} disabled={saving || uploading || !isEditEnabled}>
+                    {!isEditEnabled ? '編集は現在制限されています' : saving ? '保存中...' : '変更を保存'}
                 </Button>
             </CardContent>
         </Card>

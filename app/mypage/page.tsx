@@ -102,7 +102,7 @@ export default function MyPage() {
     if (!session) return null
 
     return (
-        <div className="container py-8 max-w-2xl">
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-2xl font-bold">マイページ</h1>
