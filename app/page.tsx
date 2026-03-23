@@ -12,7 +12,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="flex-1 flex flex-col items-center justify-center py-12 md:py-24 lg:py-32 bg-gradient-to-br from-hero-first-background via-hero-second-background to-hero-third-background" >
         <div className="container mx-auto px-4 md:px-6 flex flex-col items-center text-center space-y-4">
-          <div className='md:flex'>
+          <div className='md:flex md:items-center md:gap-12'>
             <div className='md:w-2/3 w-full'>
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none pt-4 whitespace-nowrap">
@@ -24,7 +24,7 @@ export default function Home() {
                 <h2 className="mx-auto max-w-[700px] text-4xl whitespace-nowrap">
                   この空、長田色
                 </h2>
-                <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400 py-4 mt-12 whitespace-nowrap">
+                <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400 mt-4 whitespace-nowrap">
                   長田高校文化祭 公式Webアプリ
                 </p>
               </div>
