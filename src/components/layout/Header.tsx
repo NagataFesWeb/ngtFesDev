@@ -10,7 +10,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useSession } from "@/contexts/SessionContext";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
