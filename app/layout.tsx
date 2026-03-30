@@ -16,6 +16,10 @@ const limelight = Limelight({
 export const metadata: Metadata = {
   title: "第79回 長田高校文化祭2026「SOLA」",
   description: "長田高校文化祭2026 公式Webアプリ",
+  // ここにGoogleの確認コードを追加します
+  verification: {
+    google: "4oOH8zU95W7h4bcVytdDtoTF0pPBEDOQpkILrk7Obw8",
+  },
 };
 
 export default function RootLayout({
