@@ -14,7 +14,7 @@ const limelight = Limelight({
 });
 
 export const metadata: Metadata = {
-  title: "NgtFes26 | 文化祭",
+  title: "第79回 長田高校文化祭2026「SOLA」",
   description: "長田高校文化祭2026 公式Webアプリ",
 };
 
