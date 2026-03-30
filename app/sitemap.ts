@@ -29,12 +29,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly' as const,
       priority: 0.7,
     },
-    {
-      url: '/mypage',
-      lastModified,
-      changeFrequency: 'monthly' as const,
-      priority: 0.5,
-    },
   ]
 
   return routes.map((route) => ({

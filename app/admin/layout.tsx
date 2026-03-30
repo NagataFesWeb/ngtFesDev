@@ -23,7 +23,6 @@ export default function AdminLayout({
 
     useEffect(() => {
         if (isLoginPage) {
-            setLoading(false)
             return
         }
 
