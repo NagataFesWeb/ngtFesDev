@@ -16,15 +16,40 @@ import { NewsManager } from '@/components/admin/NewsManager'
 
 import { Switch } from '@/components/ui/switch'
 
+interface Slot {
+    slot_id: string;
+    capacity: number;
+    issued_count: number;
+    start_time: string;
+    end_time: string;
+}
+
+interface Project {
+    project_id: string;
+    title: string;
+    class_name: string;
+    congestion_level: number;
+    fastpass_enabled?: boolean;
+    total_slots?: number;
+    total_issued?: number;
+}
+
+interface SystemSetting {
+    key: string;
+    value: boolean | string | number | null;
+    description: string;
+}
+
 // Slot Editor Component (Controlled Input)
-function SlotCapacityEditor({ slot, onUpdate }: { slot: any, onUpdate: (id: string, val: number) => void }) {
+function SlotCapacityEditor({ slot, onUpdate }: { slot: Slot, onUpdate: (id: string, val: number) => void }) {
     const [value, setValue] = useState(slot.capacity.toString())
     const [isEditing, setIsEditing] = useState(false)
+    const [prevCapacity, setPrevCapacity] = useState(slot.capacity)
 
-    // Sync with prop updates
-    useEffect(() => {
+    if (slot.capacity !== prevCapacity) {
+        setPrevCapacity(slot.capacity)
         setValue(slot.capacity.toString())
-    }, [slot.capacity])
+    }
 
     const handleBlur = () => {
         setIsEditing(false)
@@ -65,22 +90,20 @@ function SlotCapacityEditor({ slot, onUpdate }: { slot: any, onUpdate: (id: stri
 }
 
 export default function AdminDashboard() {
-    const [loadingStats, setLoadingStats] = useState(false)
-
     // Congestion Stats
-    const [projects, setProjects] = useState<any[]>([])
+    const [projects, setProjects] = useState<Project[]>([])
     const [loadingProjects, setLoadingProjects] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
 
     // FastPass Stats
-    const [fpProjects, setFpProjects] = useState<any[]>([])
+    const [fpProjects, setFpProjects] = useState<Project[]>([])
     const [loadingFpProjects, setLoadingFpProjects] = useState(false)
-    const [selectedFpProject, setSelectedFpProject] = useState<any | null>(null)
-    const [slots, setSlots] = useState<any[]>([])
+    const [selectedFpProject, setSelectedFpProject] = useState<Project | null>(null)
+    const [slots, setSlots] = useState<Slot[]>([])
     const [loadingSlots, setLoadingSlots] = useState(false)
 
     // System Settings
-    const [settings, setSettings] = useState<any[]>([])
+    const [settings, setSettings] = useState<SystemSetting[]>([])
     const [loadingSettings, setLoadingSettings] = useState(false)
 
     // Reset Dialog
@@ -95,7 +118,7 @@ export default function AdminDashboard() {
         setLoadingProjects(true)
         const { data, error } = await supabase.rpc('admin_get_projects_status')
         if (error) toast.error('企画一覧取得失敗: ' + error.message)
-        else setProjects(data as any)
+        else setProjects(data as Project[])
         setLoadingProjects(false)
     }
 
@@ -103,15 +126,15 @@ export default function AdminDashboard() {
         setLoadingFpProjects(true)
         const { data, error } = await supabase.rpc('admin_get_fastpass_projects')
         if (error) toast.error('FP企画一覧取得失敗: ' + error.message)
-        else setFpProjects(data as any)
+        else setFpProjects(data as Project[])
         setLoadingFpProjects(false)
     }
 
     const fetchSlots = async (projectId: string) => {
         setLoadingSlots(true)
-        const { data, error } = await supabase.rpc('admin_get_project_slots', { p_project_id: projectId } as any)
+        const { data, error } = await supabase.rpc('admin_get_project_slots', { p_project_id: projectId })
         if (error) toast.error('スロット取得失敗: ' + error.message)
-        else setSlots(data as any)
+        else setSlots(data as Slot[])
         setLoadingSlots(false)
     }
 
@@ -119,7 +142,7 @@ export default function AdminDashboard() {
         setLoadingSettings(true)
         const { data, error } = await supabase.from('system_settings').select('*').order('key')
         if (error) toast.error('設定取得失敗: ' + error.message)
-        else setSettings(data || [])
+        else setSettings(data as SystemSetting[] || [])
         setLoadingSettings(false)
     }
 
@@ -142,7 +165,7 @@ export default function AdminDashboard() {
         const { error } = await supabase.rpc('admin_update_congestion', {
             p_project_id: projectId,
             p_level: newLevel
-        } as any)
+        })
         if (error) toast.error('混雑状況更新失敗: ' + error.message)
         else {
             toast.success('更新しました')
@@ -155,7 +178,7 @@ export default function AdminDashboard() {
         const { error } = await supabase.rpc('admin_toggle_project_fastpass', {
             p_project_id: projectId,
             p_enabled: enabled
-        } as any)
+        })
         if (error) toast.error('FP設定更新失敗: ' + error.message)
         else {
             toast.success('更新しました')
@@ -168,7 +191,7 @@ export default function AdminDashboard() {
         const { error } = await supabase.rpc('admin_update_slot_capacity', {
             p_slot_id: slotId,
             p_capacity: newCapacity
-        } as any)
+        })
         if (error) toast.error('枠数更新失敗: ' + error.message)
         else {
             toast.success('更新しました')
@@ -183,7 +206,7 @@ export default function AdminDashboard() {
         const { error } = await supabase.rpc('admin_update_setting', {
             p_key: key,
             p_value: newValue
-        } as any)
+        })
         if (error) {
             toast.error('設定更新失敗: ' + error.message)
             fetchSettings()
@@ -203,14 +226,14 @@ export default function AdminDashboard() {
             const { error } = await supabase.rpc('admin_reset_all_data', {
                 p_target_table: target,
                 p_confirmation: 'RESET 2026'
-            } as any)
+            })
             if (error) throw error
             toast.success('データをリセットしました')
             setIsResetDialogOpen(false)
             fetchProjects()
             fetchFpProjects()
-        } catch (err: any) {
-            toast.error('リセット失敗: ' + err.message)
+        } catch (err: unknown) {
+            toast.error('リセット失敗: ' + (err instanceof Error ? err.message : String(err)))
         } finally {
             setResetting(false)
         }

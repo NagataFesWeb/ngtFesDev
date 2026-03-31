@@ -36,15 +36,16 @@ export default function AdminLoginPage() {
 
             // Role check happens in layout
             router.push('/admin/dashboard')
-        } catch (err: any) {
-            toast.error('ログイン失敗: ' + err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : '予期せぬエラーが発生しました'
+            toast.error('ログイン失敗: ' + message)
         } finally {
             setLoading(false)
         }
     }
 
     return (
-        <div className="container flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-950">
+        <div className="container mx-auto px-4 flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-950">
             <Card className="w-full max-w-sm shadow-xl border-red-100 dark:border-red-900/20">
                 <CardHeader className="space-y-1">
                     <div className="flex justify-center mb-4">

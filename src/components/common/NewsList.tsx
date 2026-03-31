@@ -4,16 +4,24 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { Megaphone, AlertCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+
+type NewsItem = {
+    news_id: string
+    content: string
+    is_important: boolean
+    is_active: boolean
+    created_at: string
+}
 
 export function NewsList() {
-    const [news, setNews] = useState<any[]>([])
+    const [news, setNews] = useState<NewsItem[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const fetchNews = async () => {
             const { data } = await supabase
-                .from('news' as any)
+                .from('news')
                 .select('*')
                 .eq('is_active', true)
                 .order('created_at', { ascending: false })
@@ -38,7 +46,7 @@ export function NewsList() {
                     table: 'news',
                     filter: 'is_active=eq.true'
                 },
-                (payload) => {
+                () => {
                     fetchNews() // Simple re-fetch strategy
                 }
             )

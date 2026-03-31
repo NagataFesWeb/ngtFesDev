@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,7 +63,7 @@ export const Header = () => {
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <div className="w-10 lg:w-12">
               <figure>
-                <img src="/1772606843056.jpg" alt="Logo" className="w-full h-auto rounded-full" />
+                <Image src="/1772606843056.jpg" alt="Logo" width={48} height={48} className="w-full h-auto rounded-full" />
               </figure>
             </div>
             <span className="hidden sm:inline-block font-bold text-lg">NgtFes26</span>
@@ -132,7 +133,7 @@ const AuthButton = () => {
     return () => {
       active = false;
     };
-  }, [session?.user]);
+  }, [session]);
 
   if (loading)
     return (

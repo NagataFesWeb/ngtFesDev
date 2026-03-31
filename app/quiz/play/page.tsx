@@ -35,7 +35,7 @@ export default function QuizPlayPage() {
 
     // Submit state
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [resultData, setResultData] = useState<any>(null)
+    const [resultData, setResultData] = useState<{ score: number; total_score: number; highest_score: number; play_count: number } | null>(null)
 
     useEffect(() => {
         const initQuiz = async () => {
@@ -47,7 +47,7 @@ export default function QuizPlayPage() {
                     .eq('key', 'quiz_enabled')
                     .single()
 
-                const s = settings as any
+                const s = settings as { value: boolean | string }
                 const isEnabled = !settingsError && settings && (s.value === true || s.value === 'true')
 
                 if (!isEnabled) {
@@ -74,8 +74,8 @@ export default function QuizPlayPage() {
                 }
 
                 setQuestions(questionsData)
-            } catch (err: any) {
-                toast.error(err.message)
+            } catch (err: unknown) {
+                toast.error(err instanceof Error ? err.message : String(err))
                 router.push('/quiz')
             } finally {
                 setLoading(false)
@@ -164,8 +164,8 @@ export default function QuizPlayPage() {
             }
 
             setResultData(data)
-        } catch (err: any) {
-            toast.error(err.message)
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : String(err))
         } finally {
             setIsSubmitting(false)
         }
@@ -184,7 +184,7 @@ export default function QuizPlayPage() {
                         <CardTitle className="text-2xl">スコア結果</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {isSubmitting ? (
+                        {isSubmitting || !resultData ? (
                             <div className="py-8 flex flex-col items-center">
                                 <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
                                 <p className="text-muted-foreground animate-pulse">スコアを記録中...</p>
@@ -237,7 +237,7 @@ export default function QuizPlayPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                     {q.choices.map((choice, idx) => {
-                        let btnVariant: 'outline' | 'default' | 'destructive' | 'secondary' = 'outline'
+                        const btnVariant: 'outline' | 'default' | 'destructive' | 'secondary' = 'outline'
                         let customClass = ''
 
                         if (isAnswered && correctChoiceIndex !== null) {

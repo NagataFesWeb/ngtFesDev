@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowRight, MapPin, Star, User } from 'lucide-react'
@@ -39,7 +40,7 @@ export default function Home() {
             <div className='w-full md:w-1/3 py-4 max-w-[400px]'>
               <div>
                 <figure>
-                  <img src="1772606843056.jpg" alt="" className='w-full' />
+                  <Image src="/1772606843056.jpg" alt="長田高校文化祭" width={400} height={400} className='w-full' />
                 </figure>
               </div>
             </div>

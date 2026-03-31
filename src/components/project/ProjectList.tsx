@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Database } from '@/types/database.types'
 import { ProjectCard } from '@/components/project/ProjectCard'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
 
-type ProjectWithStatus = {
+export type ProjectWithStatus = {
     project_id: string
     class_id: string
     type: string
@@ -26,7 +25,13 @@ interface ProjectListProps {
 
 export const ProjectList = ({ initialProjects }: ProjectListProps) => {
     const [projects] = useState<ProjectWithStatus[]>(initialProjects)
-    const [congestionMap, setCongestionMap] = useState<Record<string, number>>({})
+    const [congestionMap, setCongestionMap] = useState<Record<string, number>>(() => {
+        const map: Record<string, number> = {}
+        initialProjects.forEach((p) => {
+            map[p.project_id] = p.congestion_level
+        })
+        return map
+    })
 
     // We can also track realtime wait times if we want, but calculation is complex on client.
     // For now, we update Congestion Level via realtime, but Wait Time remains "as of load" 
@@ -38,15 +43,6 @@ export const ProjectList = ({ initialProjects }: ProjectListProps) => {
 
     const [searchTerm, setSearchTerm] = useState('')
     const [activeTab, setActiveTab] = useState('all')
-
-    // Initialize congestion map from initial data
-    useEffect(() => {
-        const map: Record<string, number> = {}
-        initialProjects.forEach((p) => {
-            map[p.project_id] = p.congestion_level
-        })
-        setCongestionMap(map)
-    }, [initialProjects])
 
     // Realtime subscription
     useEffect(() => {
@@ -62,7 +58,7 @@ export const ProjectList = ({ initialProjects }: ProjectListProps) => {
                 (payload) => {
                     console.log('Congestion update:', payload)
                     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-                        const newRecord = payload.new as any
+                        const newRecord = payload.new as { project_id: string; level: number }
                         setCongestionMap(prev => ({ ...prev, [newRecord.project_id]: newRecord.level }))
                     }
                 }
@@ -122,7 +118,7 @@ export const ProjectList = ({ initialProjects }: ProjectListProps) => {
                             {filteredProjects.map((project) => (
                                 <ProjectCard
                                     key={project.project_id}
-                                    project={project as any}
+                                    project={project as unknown as React.ComponentProps<typeof ProjectCard>['project']}
                                     congestionLevel={congestionMap[project.project_id]}
                                     waitTime={project.wait_time_min}
                                 />

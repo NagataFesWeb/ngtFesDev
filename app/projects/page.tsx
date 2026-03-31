@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { ProjectList } from '@/components/project/ProjectList'
+import { ProjectList, ProjectWithStatus } from '@/components/project/ProjectList'
 import { CautionNotes } from '@/components/common/CautionNotes'
 
 // Revalidate every 60 seconds (ISR) - Congestion is handled by client-side realtime, so base data can be cached.
@@ -16,7 +16,7 @@ export default async function ProjectsPage() {
     return (
         <div className="flex flex-col">
             <ProjectList
-                initialProjects={projectsWithStatus as any || []}
+                initialProjects={(projectsWithStatus as ProjectWithStatus[]) || []}
             />
             <CautionNotes />
         </div>

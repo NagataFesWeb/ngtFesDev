@@ -13,7 +13,7 @@ import { ErrorMessage } from '@/components/ui/error-message'
 import { StatusIcon } from '@/components/common/StatusIcon'
 import { useSession } from '@/contexts/SessionContext'
 import { toast } from 'sonner'
-import { ArrowLeft, Ticket, Lock } from 'lucide-react'
+import { ArrowLeft, Ticket } from 'lucide-react'
 import { useSystemSettings } from '@/hooks/useSystemSettings'
 // import qrcode from 'qrcode.react' // Will add later
 
@@ -23,8 +23,8 @@ type FastPassSlot = Database['public']['Tables']['fastpass_slots']['Row']
 export default function ProjectDetailsPage() {
     const { id } = useParams()
     const router = useRouter()
-    const { session, user } = useSession()
-    const { settings: systemSettings, loading: settingsLoading } = useSystemSettings()
+    const { session } = useSession()
+    const { settings: systemSettings } = useSystemSettings()
 
     const [project, setProject] = useState<Project | null>(null)
     const [congestionLevel, setCongestionLevel] = useState<number>(1)
@@ -50,16 +50,16 @@ export default function ProjectDetailsPage() {
                     .single()
 
                 if (projectError) throw projectError
-                setProject(projectData as any)
+                setProject(projectData as Project)
 
                 // Fetch Congestion
-                const { data: congestionData }: any = await supabase
+                const { data: congestionData } = await supabase
                     .from('congestion')
                     .select('level')
                     .eq('project_id', id as string)
                     .single()
 
-                if (congestionData) setCongestionLevel(congestionData.level)
+                if (congestionData) setCongestionLevel((congestionData as { level: number }).level)
 
                 // Fetch Estimated Wait Time
                 const { data: waitTimeData } = await supabase.rpc('get_estimated_wait_time', {
@@ -68,7 +68,7 @@ export default function ProjectDetailsPage() {
                 if (waitTimeData !== null) setWaitTime(waitTimeData)
 
                 // Fetch Slots if enabled
-                if ((projectData as any)?.fastpass_enabled) {
+                if ((projectData as Project)?.fastpass_enabled) {
                     const { data: slotsData } = await supabase
                         .from('fastpass_slots')
                         .select('*')
@@ -77,8 +77,8 @@ export default function ProjectDetailsPage() {
                     setSlots(slotsData || [])
                 }
 
-            } catch (err: any) {
-                setError(err.message)
+            } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : String(err))
             } finally {
                 setLoading(false)
             }
@@ -99,7 +99,7 @@ export default function ProjectDetailsPage() {
                 },
                 (payload) => {
                     if (payload.new) {
-                        setCongestionLevel((payload.new as any).level)
+                        setCongestionLevel((payload.new as { level: number }).level)
                     }
                 }
             )
@@ -128,14 +128,14 @@ export default function ProjectDetailsPage() {
 
             // Check custom error response if JSON
             if (data && typeof data === 'object' && 'code' in data) {
-                // @ts-ignore
+                // @ts-expect-error: Property 'status' / 'code' exists based on the assumption below
                 if (data.status >= 400) throw new Error(data.code || 'Error')
             }
 
             toast.success('整理券を発券しました！マイページを確認してください。')
             setIsFastPassModalOpen(false)
-        } catch (err: any) {
-            let msg = err.message
+        } catch (err: unknown) {
+            let msg = err instanceof Error ? err.message : String(err)
             if (msg === 'ALREADY_HAS_TICKET') msg = 'すでに有効な整理券を持っています'
             if (msg === 'SLOT_FULL') msg = 'この枠は満席です'
             toast.error('発券できませんでした: ' + msg)

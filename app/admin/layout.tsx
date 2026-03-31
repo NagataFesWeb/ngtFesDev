@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -23,7 +22,6 @@ export default function AdminLayout({
 
     useEffect(() => {
         if (isLoginPage) {
-            setLoading(false)
             return
         }
 
@@ -41,7 +39,7 @@ export default function AdminLayout({
                 .eq('user_id', user.id)
                 .single()
 
-            if (error || (data as any)?.role !== 'admin') {
+            if (error || (data as { role: string })?.role !== 'admin') {
                 toast.error('管理者権限がありません')
                 router.push('/')
                 return
@@ -60,9 +58,9 @@ export default function AdminLayout({
         router.push('/admin/login')
     }
 
-    if (loading) return <div className="h-screen flex items-center justify-center"><LoadingSpinner /></div>
-
     if (isLoginPage) return <>{children}</>
+
+    if (loading) return <div className="h-screen flex items-center justify-center"><LoadingSpinner /></div>
 
     if (!isAdmin) return null
 

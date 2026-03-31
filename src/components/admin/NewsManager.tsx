@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -28,8 +27,7 @@ export function NewsManager() {
 
     const fetchNews = async () => {
         setLoading(true)
-        // Cast to any to avoid type errors since 'news' table isn't in generated types yet
-        const { data, error } = await (supabase.from('news' as any).select('*') as any).order('created_at', { ascending: false })
+        const { data, error } = await supabase.from('news').select('*').order('created_at', { ascending: false })
 
         if (error) {
             toast.error('お知らせの取得に失敗しました: ' + error.message)
@@ -40,13 +38,14 @@ export function NewsManager() {
     }
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchNews()
     }, [])
 
     const handleCreate = async () => {
         if (!content.trim()) return
 
-        const { error } = await supabase.from('news' as any).insert({
+        const { error } = await supabase.from('news').insert({
             content,
             is_important: isImportant,
             is_active: true
@@ -65,7 +64,7 @@ export function NewsManager() {
     const handleDelete = async (id: string) => {
         if (!confirm('本当に削除しますか？')) return
 
-        const { error } = await supabase.from('news' as any).delete().eq('news_id', id)
+        const { error } = await supabase.from('news').delete().eq('news_id', id)
 
         if (error) {
             toast.error('削除失敗: ' + error.message)
@@ -76,7 +75,7 @@ export function NewsManager() {
     }
 
     const handleToggleActive = async (id: string, currentStatus: boolean) => {
-        const { error } = await supabase.from('news' as any).update({ is_active: !currentStatus }).eq('news_id', id)
+        const { error } = await supabase.from('news').update({ is_active: !currentStatus }).eq('news_id', id)
 
         if (error) {
             toast.error('更新失敗: ' + error.message)

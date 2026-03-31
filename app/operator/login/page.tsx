@@ -25,11 +25,11 @@ export default function OperatorLoginPage() {
             const { data, error } = await supabase.rpc('operator_login', {
                 p_class_id: classId,
                 p_password: password
-            } as any)
+            })
 
             if (error) throw error
 
-            const result = data as any
+            const result = data as { status: string; token: string; class_name: string; project_id: string; message?: string }
             if (result.status === 'success') {
                 login(result.token, result.class_name, result.project_id)
                 toast.success(`ようこそ、${result.class_name}のみなさん`)
@@ -37,8 +37,8 @@ export default function OperatorLoginPage() {
             } else {
                 toast.error(result.message || 'ログインに失敗しました')
             }
-        } catch (err: any) {
-            toast.error('エラーが発生しました: ' + err.message)
+        } catch (err: unknown) {
+            toast.error('エラーが発生しました: ' + (err instanceof Error ? err.message : String(err)))
         } finally {
             setLoading(false)
         }

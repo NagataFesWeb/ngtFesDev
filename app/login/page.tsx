@@ -56,8 +56,9 @@ export default function LoginPage() {
                 toast.success('ログインしました')
                 router.push('/mypage')
             }
-        } catch (err: any) {
-            toast.error(err.message)
+        } catch (err: Error | unknown) {
+            const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+            toast.error(errorMessage)
         } finally {
             setLoading(false)
         }
