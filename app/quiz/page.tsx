@@ -319,7 +319,7 @@ export default function QuizDashboardPage() {
                     {isEnabled ? (
                         <>
                             <PlayCircle className="w-6 h-6 mr-2" />
-                            クイズに挑戦する (全10問)
+                            クイズに挑戦する (10問)
                         </>
                     ) : (
                         <>
