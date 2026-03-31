@@ -1,4 +1,0 @@
-
-> test-web@0.1.0 type-check
-> tsc --noEmit
-
