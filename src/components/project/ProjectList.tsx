@@ -14,6 +14,8 @@ export type ProjectWithStatus = {
     title: string
     description: string
     image_url: string
+    location: string | null
+    schedule: string | null
     fastpass_enabled: boolean
     congestion_level: number
     wait_time_min: number

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowRight, MapPin, Star, User } from 'lucide-react'
 import { NewsList } from '@/components/common/NewsList'
 import { CautionNotes } from '@/components/common/CautionNotes'
+import { PaymentNotes } from '@/components/common/PaymentNotes'
 
 export default function Home() {
   console.log('Rendering Home Page on Server');
@@ -107,6 +108,7 @@ export default function Home() {
 
       {/* Caution Section */}
       <CautionNotes />
+      <PaymentNotes />
     </div>
   )
 }

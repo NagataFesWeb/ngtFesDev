@@ -87,6 +87,8 @@ CREATE TABLE IF NOT EXISTS public.projects (
     title TEXT NOT NULL,
     description TEXT,
     image_url TEXT,
+    location TEXT,
+    schedule TEXT,
     fastpass_enabled BOOLEAN DEFAULT false,
     rotation_time_min INTEGER DEFAULT 10, -- 1グループ分の待ち時間（分）
     max_queue_size INTEGER DEFAULT 50,    -- 最大待機人数
@@ -718,6 +720,7 @@ END;
 $$;
 
 -- 8.2 混雑状況＋待ち時間付きプロジェクト一覧
+DROP FUNCTION IF EXISTS public.get_projects_with_status();
 CREATE OR REPLACE FUNCTION public.get_projects_with_status()
 RETURNS TABLE (
     project_id UUID,
@@ -726,6 +729,8 @@ RETURNS TABLE (
     title TEXT,
     description TEXT,
     image_url TEXT,
+    location TEXT,
+    schedule TEXT,
     fastpass_enabled BOOLEAN,
     congestion_level INTEGER,
     wait_time_min INTEGER
@@ -742,6 +747,8 @@ BEGIN
         p.title,
         p.description,
         p.image_url,
+        p.location,
+        p.schedule,
         p.fastpass_enabled,
         COALESCE(c.level, 1) as congestion_level,
         public.get_estimated_wait_time(p.project_id) as wait_time_min
@@ -1168,6 +1175,29 @@ BEGIN
         WHERE project_id = r_project.project_id;
         
     END LOOP;
+END $$;
+
+-- =============================================================================
+-- SECTION 11: STORAGE BUCKETS
+-- =============================================================================
+DO $$
+BEGIN
+    INSERT INTO storage.buckets (id, name, public) 
+    VALUES ('public-assets', 'public-assets', true) 
+    ON CONFLICT (id) DO NOTHING;
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    CREATE POLICY "Public Access public-assets" ON storage.objects FOR SELECT USING ( bucket_id = 'public-assets' );
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    CREATE POLICY "Public Upload public-assets" ON storage.objects FOR INSERT WITH CHECK ( bucket_id = 'public-assets' );
+EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
 
 

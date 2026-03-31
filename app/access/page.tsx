@@ -1,6 +1,7 @@
 import Image from "next/image";
 import ngtmap from "./ngtmap.png";
 import { CautionNotes } from "@/components/common/CautionNotes";
+import { PaymentNotes } from "@/components/common/PaymentNotes";
 
 export default function Access() {
     return (
@@ -61,6 +62,7 @@ export default function Access() {
 
             {/* 注意事項 */}
             <CautionNotes />
+            <PaymentNotes />
         </div>
     )
 }

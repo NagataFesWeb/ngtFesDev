@@ -59,6 +59,8 @@ export interface Database {
                     title: string
                     description: string | null
                     image_url: string | null
+                    location: string | null
+                    schedule: string | null
                     fastpass_enabled: boolean | null
                     rotation_time_min: number
                     max_queue_size: number
@@ -71,6 +73,8 @@ export interface Database {
                     title: string
                     description?: string | null
                     image_url?: string | null
+                    location?: string | null
+                    schedule?: string | null
                     fastpass_enabled?: boolean | null
                     rotation_time_min?: number
                     max_queue_size?: number
@@ -83,6 +87,8 @@ export interface Database {
                     title?: string
                     description?: string | null
                     image_url?: string | null
+                    location?: string | null
+                    schedule?: string | null
                     fastpass_enabled?: boolean | null
                     rotation_time_min?: number
                     max_queue_size?: number
@@ -417,6 +423,8 @@ export interface Database {
                     title: string
                     description: string
                     image_url: string
+                    location: string | null
+                    schedule: string | null
                     fastpass_enabled: boolean
                     congestion_level: number
                     wait_time_min: number

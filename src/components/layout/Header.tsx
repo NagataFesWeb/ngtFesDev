@@ -19,8 +19,14 @@ const NavLinks = () => (
     <Link href="/" className="text-sm font-medium transition-colors hover:text-primary">
       トップ
     </Link>
-    <Link href="/projects" className="text-sm font-medium transition-colors hover:text-primary">
-      企画一覧
+    <Link href="/booth" className="text-sm font-medium transition-colors hover:text-primary">
+      模擬店
+    </Link>
+    <Link href="/display" className="text-sm font-medium transition-colors hover:text-primary">
+      展示
+    </Link>
+    <Link href="/stage" className="text-sm font-medium transition-colors hover:text-primary">
+      ステージ
     </Link>
     <Link href="/quiz" className="text-sm font-medium transition-colors hover:text-primary">
       長田検定
@@ -39,8 +45,14 @@ const MobileNavLinks = () => (
     <Link href="/" className="block py-2 text-base font-medium transition-colors hover:text-primary">
       トップ
     </Link>
-    <Link href="/projects" className="block py-2 text-base font-medium transition-colors hover:text-primary">
-      企画一覧
+    <Link href="/booth" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      模擬店
+    </Link>
+    <Link href="/display" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      展示
+    </Link>
+    <Link href="/stage" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      ステージ
     </Link>
     <Link href="/quiz" className="block py-2 text-base font-medium transition-colors hover:text-primary">
       長田検定
