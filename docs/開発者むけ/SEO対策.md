@@ -26,7 +26,7 @@ Google検索などの検索エンジンに正しく、かつ効率的にイン�
 
 Googleに「このサイトの管理者は私です」と証明し、連携を開始します。
 
-1. [Google Search Console] にアクセス。
+1. [Google Search Console] にアクセスし、文化祭用Googleアカウントでログイン。
 2. 「URL プレフィックス」を選択し、`https://ngt-fes.vercel.app/` を入力。
 3. 確認方法の選択肢から「HTML タグ」を選択。
 4. <meta name="google-site-verification" content="数値..." /> をコピー。
