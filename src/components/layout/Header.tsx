@@ -19,8 +19,14 @@ const NavLinks = () => (
     <Link href="/" className="text-sm font-medium transition-colors hover:text-primary">
       トップ
     </Link>
-    <Link href="/projects" className="text-sm font-medium transition-colors hover:text-primary">
-      企画一覧
+    <Link href="/booth" className="text-sm font-medium transition-colors hover:text-primary">
+      模擬店
+    </Link>
+    <Link href="/display" className="text-sm font-medium transition-colors hover:text-primary">
+      展示
+    </Link>
+    <Link href="/stage" className="text-sm font-medium transition-colors hover:text-primary">
+      ステージ
     </Link>
     <Link href="/quiz" className="text-sm font-medium transition-colors hover:text-primary">
       長田検定
@@ -39,8 +45,14 @@ const MobileNavLinks = () => (
     <Link href="/" className="block py-2 text-base font-medium transition-colors hover:text-primary">
       トップ
     </Link>
-    <Link href="/projects" className="block py-2 text-base font-medium transition-colors hover:text-primary">
-      企画一覧
+    <Link href="/booth" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      模擬店
+    </Link>
+    <Link href="/display" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      展示
+    </Link>
+    <Link href="/stage" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+      ステージ
     </Link>
     <Link href="/quiz" className="block py-2 text-base font-medium transition-colors hover:text-primary">
       長田検定
@@ -66,7 +78,7 @@ export const Header = () => {
                 <Image src="/1772606843056.jpg" alt="Logo" width={48} height={48} className="w-full h-auto rounded-full" />
               </figure>
             </div>
-            <span className="hidden sm:inline-block font-bold text-lg">NgtFes26</span>
+            <span className="font-bold text-2xl limelight">SOLA</span>
           </Link>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <NavLinks />

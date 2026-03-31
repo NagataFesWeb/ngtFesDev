@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { MapPin, Clock } from 'lucide-react'
 import { StatusIcon } from '@/components/common/StatusIcon'
 import { Database } from '@/types/database.types'
 
@@ -36,8 +38,7 @@ export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectC
                             Let's try object-contain with a neutral background, or just cover with taller aspect.
                             Let's go with cover + aspect-[4/3] (closer to square/portrait) which is better for posters than video(16:9).
                         */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={project.image_url} alt={project.title} className="h-full w-full object-cover transition-transform hover:scale-105" />
+                        <Image src={project.image_url} alt={project.title} fill className="object-cover transition-transform hover:scale-105" />
                     </div>
                 )}
                 <CardHeader className="p-4 pb-2">
@@ -57,8 +58,24 @@ export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectC
                     <CardTitle className="line-clamp-1 text-lg">{project.title}</CardTitle>
                     <p className="text-sm text-muted-foreground">{project.class_id}</p>
                 </CardHeader>
-                <CardContent className="p-4 pt-0 flex-1">
-                    <p className="line-clamp-2 text-sm text-gray-500">
+                <CardContent className="p-4 pt-0 flex-1 flex flex-col">
+                    {(project.location || project.schedule) && (
+                        <div className="text-sm font-medium text-foreground flex flex-col gap-1 mb-2">
+                            {project.location && (
+                                <div className="flex items-start gap-1.5 align-middle">
+                                    <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+                                    <span>{project.location}</span>
+                                </div>
+                            )}
+                            {project.schedule && (
+                                <div className="flex items-start gap-1.5 align-middle">
+                                    <Clock className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+                                    <span className="whitespace-pre-wrap">{project.schedule}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <p className="line-clamp-2 text-sm text-gray-500 mt-auto">
                         {project.description || '説明文がありません'}
                     </p>
                 </CardContent>

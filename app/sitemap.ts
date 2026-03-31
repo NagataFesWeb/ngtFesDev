@@ -1,37 +1,65 @@
 import { MetadataRoute } from 'next'
+import { supabase } from '@/lib/supabase'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://ngt-fes.vercel.app'
   const lastModified = new Date()
 
-  const routes = [
+  // Static routes based on the current app structure
+  const staticRoutes = [
     {
       url: '',
-      lastModified,
-      changeFrequency: 'daily' as const,
       priority: 1.0,
+      changeFrequency: 'daily' as const,
     },
     {
-      url: '/projects',
-      lastModified,
-      changeFrequency: 'daily' as const,
+      url: '/booth',
       priority: 0.9,
+      changeFrequency: 'daily' as const,
+    },
+    {
+      url: '/display',
+      priority: 0.9,
+      changeFrequency: 'daily' as const,
+    },
+    {
+      url: '/stage',
+      priority: 0.9,
+      changeFrequency: 'daily' as const,
     },
     {
       url: '/access',
-      lastModified,
-      changeFrequency: 'monthly' as const,
       priority: 0.8,
+      changeFrequency: 'monthly' as const,
     },
     {
       url: '/quiz',
-      lastModified,
-      changeFrequency: 'weekly' as const,
       priority: 0.7,
+      changeFrequency: 'weekly' as const,
     },
   ]
 
-  return routes.map((route) => ({
+  // Dynamic project routes
+  const { data: projects } = await supabase
+    .from('projects')
+    .select('project_id')
+
+  const projectRoutes = (projects || []).map((project) => ({
+    url: `/projects/${project.project_id}`,
+    priority: 0.6,
+    changeFrequency: 'weekly' as const,
+    lastModified,
+  }))
+
+  const allRoutes = [
+    ...staticRoutes.map((route) => ({
+      ...route,
+      lastModified,
+    })),
+    ...projectRoutes,
+  ]
+
+  return allRoutes.map((route) => ({
     url: `${baseUrl}${route.url}`,
     lastModified: route.lastModified,
     changeFrequency: route.changeFrequency,

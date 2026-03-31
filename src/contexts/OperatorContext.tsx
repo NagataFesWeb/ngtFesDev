@@ -33,19 +33,19 @@ export const OperatorProvider = ({ children }: { children: React.ReactNode }) =>
         const storedClass = sessionStorage.getItem('operator_class_name')
         const storedProjectId = sessionStorage.getItem('operator_project_id')
 
-        if (storedToken) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setOperatorTokenState(storedToken)
-        }
-        if (storedClass) {
-             
-            setClassNameState(storedClass)
-        }
-        if (storedProjectId) {
-             
-            setProjectIdState(storedProjectId)
-        }
-        setLoading(false)
+        // Defer state updates to microtask to avoid synchronous setState warning in useEffect
+        Promise.resolve().then(() => {
+            if (storedToken) {
+                setOperatorTokenState(storedToken)
+            }
+            if (storedClass) {
+                setClassNameState(storedClass)
+            }
+            if (storedProjectId) {
+                setProjectIdState(storedProjectId)
+            }
+            setLoading(false)
+        })
     }, [])
 
     const login = (token: string, name: string, pid: string) => {

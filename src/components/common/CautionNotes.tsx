@@ -44,6 +44,38 @@ export function CautionNotes() {
                                     その際、<span className="font-medium text-destructive">傘の使用は禁止</span>です。カッパ等をお使いください。
                                 </span>
                             </li>
+                            <li className="flex items-start">
+                                <AlertCircle className="mr-3 mt-1 h-5 w-5 text-primary shrink-0" />
+                                <span className="leading-relaxed">
+                                    校舎内の食品模擬店で購入された食品は指定された場所で食べて下さい。<br />
+                                    <span className="font-medium text-destructive">校舎内での食べ歩きは禁止</span>しております。
+                                </span>
+                            </li>
+                            <li className="flex items-start">
+                                <AlertCircle className="mr-3 mt-1 h-5 w-5 text-primary shrink-0" />
+                                <span className="leading-relaxed">
+                                    飲食は、食品模擬待機列、教室模擬飲食許可スペース、イートインスペースのみ可能となっております。<br />
+                                    <span className="font-medium text-destructive">食べ歩きはご遠慮ください。</span>
+                                </span>
+                            </li>
+                            <li className="flex items-start">
+                                <AlertCircle className="mr-3 mt-1 h-5 w-5 text-primary shrink-0" />
+                                <span className="leading-relaxed">
+                                    写真や動画のSNSへのアップロードはおやめください。
+                                </span>
+                            </li>
+                            <li className="flex items-start">
+                                <AlertCircle className="mr-3 mt-1 h-5 w-5 text-primary shrink-0" />
+                                <span className="leading-relaxed">
+                                    落とし物は野外ステージ横の本部までお願いします。
+                                </span>
+                            </li>
+                            <li className="flex items-start">
+                                <AlertCircle className="mr-3 mt-1 h-5 w-5 text-primary shrink-0" />
+                                <span className="leading-relaxed">
+                                    食堂はau PAYの使用はできません。<span className="font-medium text-destructive">現金、金券のみ使用可能</span>です。
+                                </span>
+                            </li>
                         </ul>
                     </div>
                 </div>

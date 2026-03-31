@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { Database } from '@/types/database.types'
 import { Button } from '@/components/ui/button'
@@ -155,9 +156,8 @@ export default function ProjectDetailsPage() {
 
             <div className="space-y-6">
                 {project.image_url && (
-                    <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={project.image_url} alt={project.title} className="h-full w-full object-cover" />
+                    <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted relative">
+                        <Image src={project.image_url} alt={project.title} fill className="object-cover" />
                     </div>
                 )}
 
