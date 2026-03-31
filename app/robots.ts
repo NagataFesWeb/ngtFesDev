@@ -5,6 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
+      disallow: ['/admin', '/login', '/mypage'],
     },
     sitemap: 'https://ngt-fes.vercel.app/sitemap.xml',
   }
