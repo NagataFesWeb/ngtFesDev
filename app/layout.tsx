@@ -14,8 +14,8 @@ const limelight = Limelight({
 });
 
 export const metadata: Metadata = {
-  title: "第79回 長田高校文化祭2026「SOLA」",
-  description: "長田高校文化祭2026 公式Webアプリ",
+  title: "第79回 長田高校文化祭2026「SOLA」 HP",
+  description: "長田高校文化祭2026 HPへようこそ！模擬店情報、ステージイベント、アクセス方法など、文化祭の全てを網羅。最新情報をお届けします。",
   // ここにGoogleの確認コードを追加します
   verification: {
     google: "4oOH8zU95W7h4bcVytdDtoTF0pPBEDOQpkILrk7Obw8",
