@@ -27,7 +27,7 @@ export default function Home() {
                   この空、長田色
                 </h2>
               </div>
-              <div className="pt-12">
+              <div className="pt-8 md:pt-12">
                 <Link href="/booth">
                   <Button size="lg" className="h-12 px-8">
                     ブースを探す <ArrowRight className="ml-2 h-4 w-4" />
@@ -49,7 +49,7 @@ export default function Home() {
       {/* Menu Grid */}
       <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5 lg:gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
             <Link href="/booth" className="group">
               <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
                 <CardHeader className="p-4">
@@ -57,7 +57,7 @@ export default function Home() {
                   <CardTitle className="text-lg">模擬店</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <p className="text-sm md:text-base text-muted-foreground line-clamp-2">
+                  <p className="text-sm md:text-base text-muted-foreground">
                     教室模擬、食品模擬の全店舗をチェック。
                   </p>
                 </CardContent>
@@ -70,7 +70,7 @@ export default function Home() {
                   <CardTitle className="text-lg">文化部展示</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <p className="text-sm md:text-base text-muted-foreground line-clamp-2">
+                  <p className="text-sm md:text-base text-muted-foreground">
                     文化部の展示をチェック。
                   </p>
                 </CardContent>
@@ -83,7 +83,7 @@ export default function Home() {
                   <CardTitle className="text-lg">ステージ</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <p className="text-sm md:text-base text-muted-foreground line-clamp-2">
+                  <p className="text-sm md:text-base text-muted-foreground">
                     野外・講堂での熱いパフォーマンス。
                   </p>
                 </CardContent>
@@ -96,20 +96,20 @@ export default function Home() {
                   <CardTitle className="text-lg">長田検定</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <p className="text-sm md:text-base text-muted-foreground line-clamp-2">
+                  <p className="text-sm md:text-base text-muted-foreground">
                     長田高校のクイズに挑戦！ハイスコアを狙おう。
                   </p>
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/mypage" className="group md:col-span-1">
+            <Link href="/mypage" className="group">
               <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
                 <CardHeader className="p-4">
                   <User className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
                   <CardTitle className="text-lg">マイページ</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                  <p className="text-sm md:text-base text-muted-foreground line-clamp-2">
+                  <p className="text-sm md:text-base text-muted-foreground">
                     パスの確認やプロフィールの設定。
                   </p>
                 </CardContent>

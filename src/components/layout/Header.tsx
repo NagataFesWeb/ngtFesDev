@@ -78,7 +78,7 @@ export const Header = () => {
                 <Image src="/1772606843056.jpg" alt="Logo" width={48} height={48} className="w-full h-auto rounded-full" />
               </figure>
             </div>
-            <span className="hidden sm:inline-block font-bold text-lg">NgtFes26</span>
+            <span className="font-bold text-2xl limelight">SOLA</span>
           </Link>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <NavLinks />
