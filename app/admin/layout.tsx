@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -40,7 +39,7 @@ export default function AdminLayout({
                 .eq('user_id', user.id)
                 .single()
 
-            if (error || (data as any)?.role !== 'admin') {
+            if (error || (data as { role: string })?.role !== 'admin') {
                 toast.error('管理者権限がありません')
                 router.push('/')
                 return

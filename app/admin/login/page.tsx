@@ -36,8 +36,9 @@ export default function AdminLoginPage() {
 
             // Role check happens in layout
             router.push('/admin/dashboard')
-        } catch (err: any) {
-            toast.error('ログイン失敗: ' + err.message)
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : '予期せぬエラーが発生しました'
+            toast.error('ログイン失敗: ' + message)
         } finally {
             setLoading(false)
         }
