@@ -58,9 +58,9 @@ export default function AdminLayout({
         router.push('/admin/login')
     }
 
-    if (loading) return <div className="h-screen flex items-center justify-center"><LoadingSpinner /></div>
-
     if (isLoginPage) return <>{children}</>
+
+    if (loading) return <div className="h-screen flex items-center justify-center"><LoadingSpinner /></div>
 
     if (!isAdmin) return null
 
