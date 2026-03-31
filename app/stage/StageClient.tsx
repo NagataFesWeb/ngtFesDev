@@ -24,7 +24,7 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
     })
 
     const [searchTerm, setSearchTerm] = useState('')
-    const [activeTab, setActiveTab] = useState('野外ステージ')
+    const [activeTab, setActiveTab] = useState('all')
     
     // Attempt to get the timetable image from Supabase Storage
     const [mapUrl, setMapUrl] = useState<string | null>(null)
@@ -71,7 +71,7 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
         // Location will determine if it's 野外ステージ or 講堂ステージ
         // If location is not strictly set yet, we might fallback.
         const projLoc = project.location || ''
-        const matchesTab = projLoc.includes(activeTab)
+        const matchesTab = activeTab === 'all' ? true : projLoc.includes(activeTab)
 
         return matchesSearch && matchesTab
     })
@@ -107,8 +107,9 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
 
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <Tabs defaultValue="野外ステージ" onValueChange={setActiveTab} className="w-full sm:w-auto">
-                        <TabsList className="grid w-full grid-cols-2 sm:w-[300px]">
+                    <Tabs defaultValue="all" onValueChange={setActiveTab} className="w-full sm:w-auto">
+                        <TabsList className="grid w-full grid-cols-3 sm:w-[400px]">
+                            <TabsTrigger value="all">全て</TabsTrigger>
                             <TabsTrigger value="野外ステージ">野外ステージ</TabsTrigger>
                             <TabsTrigger value="講堂ステージ">講堂ステージ</TabsTrigger>
                         </TabsList>

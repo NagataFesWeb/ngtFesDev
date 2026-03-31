@@ -24,7 +24,7 @@ export const BoothClient = ({ initialProjects }: BoothClientProps) => {
     })
 
     const [searchTerm, setSearchTerm] = useState('')
-    const [activeTab, setActiveTab] = useState('class')
+    const [activeTab, setActiveTab] = useState('all')
     
     // Attempt to get the venue map image from Supabase Storage
     const [mapUrl, setMapUrl] = useState<string | null>(null)
@@ -73,7 +73,7 @@ export const BoothClient = ({ initialProjects }: BoothClientProps) => {
         const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (project.class_id && project.class_id.toLowerCase().includes(searchTerm.toLowerCase()))
         
-        const matchesTab = project.type === activeTab
+        const matchesTab = activeTab === 'all' ? true : project.type === activeTab
         return matchesSearch && matchesTab
     })
 
@@ -109,8 +109,9 @@ export const BoothClient = ({ initialProjects }: BoothClientProps) => {
 
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <Tabs defaultValue="class" onValueChange={setActiveTab} className="w-full sm:w-auto">
-                        <TabsList className="grid w-full grid-cols-2 sm:w-[300px]">
+                    <Tabs defaultValue="all" onValueChange={setActiveTab} className="w-full sm:w-auto">
+                        <TabsList className="grid w-full grid-cols-3 sm:w-[400px]">
+                            <TabsTrigger value="all">全て</TabsTrigger>
                             <TabsTrigger value="class">教室模擬</TabsTrigger>
                             <TabsTrigger value="food">食品模擬</TabsTrigger>
                         </TabsList>
