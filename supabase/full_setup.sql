@@ -1036,6 +1036,7 @@ INSERT INTO public.classes (class_id, class_name, password_hash) VALUES
 ('2-6', '2年6組', 'pass26'),
 ('2-7', '2年7組', 'pass27'),
 ('2-8', '2年8組', 'pass28'),
+('3-1', '3年1組', 'pass31'),
 ('3-2', '3年2組', 'pass32'),
 ('3-3', '3年3組', 'pass33'),
 ('3-4', '3年4組', 'pass34'),
@@ -1057,13 +1058,14 @@ INSERT INTO public.projects (class_id, type, title, description, fastpass_enable
 ('2-7', 'class', 'Coffee 2-7',   '喫茶店 (展示)',                  true,  NULL),
 ('2-8', 'class', 'Game 2-8',     'レトロゲームセンター',          false, NULL),
 -- 3年：フード
-('3-2', 'food',  '3-2 Curry',    'スパイスから作ったカレー',      true,  NULL),
-('3-3', 'food',  '3-3 Crepe',    '甘くて美味しいクレープ',        true,  NULL),
+('3-1', 'food',  '3-1 Yakisoba', '美味しい焼きそば',              false, NULL),
+('3-2', 'food',  '3-2 Curry',    'スパイスから作ったカレー',      false, NULL),
+('3-3', 'food',  '3-3 Crepe',    '甘くて美味しいクレープ',        false, NULL),
 ('3-4', 'food',  '3-4 Frankfurt','アツアツフランクフルト',        false, NULL),
-('3-5', 'food',  '3-5 Tapioca',  'タピオカドリンク専門店',        true,  NULL),
-('3-6', 'food',  '3-6 Burger',   '特製ハンバーガー',              true,  NULL),
+('3-5', 'food',  '3-5 Tapioca',  'タピオカドリンク専門店',        false, NULL),
+('3-6', 'food',  '3-6 Burger',   '特製ハンバーガー',              false, NULL),
 ('3-7', 'food',  '3-7 Udon',     '手打ちうどん',                  false, NULL),
-('3-8', 'food',  '3-8 Ice',      'サーティワンアイスクリーム',    true,  NULL)
+('3-8', 'food',  '3-8 Ice',      'サーティワンアイスクリーム',    false, NULL)
 ON CONFLICT DO NOTHING;
 
 -- 11.4 全プロジェクトの混雑度初期値（レベル1）
@@ -1078,14 +1080,36 @@ WHERE NOT EXISTS (
 -- 11.5 追加のシードデータ (from seed.sql)
 -- Classes
 INSERT INTO public.classes (class_id, class_name, password_hash) VALUES
-('1-1', '1年1組', 'pass11'),
-('3-1', '3年1組', 'pass31')
+('buturi', '物理部', 'pass_buturi'),
+('syasin', '写真部', 'pass_syasin'),
+('sakado', '茶華道部', 'pass_sakado'),
+('bijutu', '美術部', 'pass_bijutu'),
+('tosyo', '図書委員会', 'pass_tosyo'),
+('bungei', '文芸部', 'pass_bungei'),
+('manken', '漫画研究部', 'pass_manken'),
+('suugaku', '数学部', 'pass_suugaku'),
+('syodo', '書道部', 'pass_syodo'),
+('ESS', 'ESS 部', 'pass_ESS'),
+('katei', '家庭部', 'pass_katei'),
+('sinbun', '新聞委員会', 'pass_sinbun'),
+('seibutu', '生物部', 'pass_seibutu')
 ON CONFLICT (class_id) DO NOTHING;
 
 -- Projects
 INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled) VALUES
-('1-1', 'exhibition', '1-1 Exhibition', 'Great exhibition', false),
-('3-1', 'food', '3-1 Yakisoba', 'Delicious yakisoba', true)
+('buturi', 'exhibition', '物理部', '物理現象の不思議を体験！驚きの実験が盛りだくさん。', false),
+('syasin', 'exhibition', '写真部', '部員たちが切り取った珠玉の一枚。一瞬の美しさを展示します。', false),
+('sakado', 'exhibition', '茶華道部', 'お茶と生け花の雅な世界。日本の伝統文化に触れてみませんか？', false),
+('bijutu', 'exhibition', '美術部', '個性豊かな部員による独創的なアート作品の数々。', false),
+('tosyo', 'exhibition', '図書委員会', '本の魅力を再発見！おすすめ本紹介やしおり製作など。', false),
+('bungei', 'exhibition', '文芸部', '言葉に込めた想い。部誌の配布と作品展示を行います。', false),
+('manken', 'exhibition', '漫画研究部', '魂の込もったイラスト・漫画展示。イラストのリクエストも募集中！', false),
+('suugaku', 'exhibition', '数学部', '数字のパズルに挑戦！数学の楽しさを体験してください。', false),
+('syodo', 'exhibition', '書道部', '迫力の筆致をご覧あれ。伝統と革新が融合した書の世界。', false),
+('ESS', 'exhibition', 'ESS 部', 'Enjoy English! 英語で楽しくコミュニケーションしましょう。', false),
+('katei', 'exhibition', '家庭部', '手作りの温もりを感じる小物の展示。部員による自信作です。', false),
+('sinbun', 'exhibition', '新聞委員会', '最近の学校ニュースを凝縮！長田高校の「今」をお届けします。', false),
+('seibutu', 'exhibition', '生物部', '校内に潜む生き物たちの生態を観察。生命の不思議に迫ります。', false)
 ON CONFLICT DO NOTHING;
 
 -- Init Congestion for projects
@@ -1128,8 +1152,8 @@ DECLARE
     r_project RECORD;
     v_today DATE := CURRENT_DATE;
 BEGIN
-    -- Iterate over class projects
-    FOR r_project IN SELECT project_id, title FROM public.projects WHERE type IN ('class', 'food', 'stage', 'exhibition') LOOP
+    -- Iterate over projects with FastPass enabled
+    FOR r_project IN SELECT project_id, title FROM public.projects WHERE fastpass_enabled = true LOOP
         
         RAISE NOTICE 'Seeding slots for: %', r_project.title;
 
@@ -1168,11 +1192,6 @@ BEGIN
             (v_today || ' 15:00:00+09')::TIMESTAMP WITH TIME ZONE,
             20
         ) ON CONFLICT DO NOTHING;
-        
-        -- Enable FastPass for these projects
-        UPDATE public.projects 
-        SET fastpass_enabled = true 
-        WHERE project_id = r_project.project_id;
         
     END LOOP;
 END $$;

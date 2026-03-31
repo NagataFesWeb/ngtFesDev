@@ -38,8 +38,8 @@ export function NewsManager() {
     }
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchNews()
+        // Defer to microtask to avoid synchronous setState warning
+        Promise.resolve().then(() => fetchNews())
     }, [])
 
     const handleCreate = async () => {

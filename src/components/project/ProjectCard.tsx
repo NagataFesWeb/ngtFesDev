@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Clock } from 'lucide-react'
@@ -37,8 +38,7 @@ export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectC
                             Let's try object-contain with a neutral background, or just cover with taller aspect.
                             Let's go with cover + aspect-[4/3] (closer to square/portrait) which is better for posters than video(16:9).
                         */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={project.image_url} alt={project.title} className="h-full w-full object-cover transition-transform hover:scale-105" />
+                        <Image src={project.image_url} alt={project.title} fill className="object-cover transition-transform hover:scale-105" />
                     </div>
                 )}
                 <CardHeader className="p-4 pb-2">

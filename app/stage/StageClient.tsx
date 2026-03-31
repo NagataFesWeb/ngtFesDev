@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { ProjectCard } from '@/components/project/ProjectCard'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -86,18 +87,18 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
                 <h2 className="text-xl font-semibold border-b pb-2">タイムテーブル</h2>
                 <div className="w-full aspect-video bg-muted rounded-md border flex items-center justify-center overflow-hidden relative">
                     {!mapLoading && mapUrl ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img 
+                        <Image 
                             src={mapUrl} 
                             alt="タイムテーブル" 
-                            className="w-full h-full object-contain"
+                            fill
+                            className="object-contain"
                             onError={(e) => {
                                 e.currentTarget.style.display = 'none';
-                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                e.currentTarget.parentElement?.querySelector('.fallback-content')?.classList.remove('hidden');
                             }}
                         />
                     ) : null}
-                    <div className={mapUrl ? "hidden absolute inset-0 flex items-center justify-center text-muted-foreground flex-col gap-2" : "absolute inset-0 flex items-center justify-center text-muted-foreground flex-col gap-2"}>
+                    <div className={mapUrl ? "hidden absolute inset-0 flex items-center justify-center text-muted-foreground flex-col gap-2 fallback-content" : "absolute inset-0 flex items-center justify-center text-muted-foreground flex-col gap-2 fallback-content"}>
                         <span className="text-lg font-medium">Coming Soon...</span>
                         <span className="text-sm">タイムテーブル準備中</span>
                     </div>
