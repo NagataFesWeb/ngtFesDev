@@ -33,13 +33,17 @@ $ vercel env add [変数名]
 ### 主な変数の設定例:
 1. NEXT_PUBLIC_SUPABASE_URL
    - Value: (SupabaseのURL)
+   - Mark as sensitive?: N
    - Environments: Production, Preview, Development すべて選択
 2. NEXT_PUBLIC_SUPABASE_ANON_KEY
    - Value: (Anon Key)
+   - How to proceed?: Leave as is
    - Mark as sensitive?: N
+   - Environments: Production, Preview, Development すべて選択
 3. SUPABASE_SERVICE_ROLE_KEY
    - Value: (Service Role Key)
    - Mark as sensitive?: y (重要：管理権限キーのため)
+   - Environments: Production, Preview を選択 (重要：管理権限キーのため)
 
 ---
 
