@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowRight, MapPin, Star, User } from 'lucide-react'
+import { ArrowRight, MapPin, Star, User, Store, Palette, Music } from 'lucide-react'
 import { NewsList } from '@/components/common/NewsList'
 import { CautionNotes } from '@/components/common/CautionNotes'
 import { PaymentNotes } from '@/components/common/PaymentNotes'
@@ -26,14 +26,11 @@ export default function Home() {
                 <h2 className="mx-auto max-w-[700px] text-4xl whitespace-nowrap">
                   この空、長田色
                 </h2>
-                <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400 mt-4 whitespace-nowrap">
-                  長田高校文化祭 公式Webアプリ
-                </p>
               </div>
-              <div className="space-x-4">
-                <Link href="/projects">
+              <div className="pt-8">
+                <Link href="/booth">
                   <Button size="lg" className="h-12 px-8">
-                    企画を探す <ArrowRight className="ml-2 h-4 w-4" />
+                    ブースを探す <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
               </div>
@@ -52,42 +49,68 @@ export default function Home() {
       {/* Menu Grid */}
       <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="grid gap-6 md:grid-cols-3 lg:gap-12">
-            <Link href="/projects" className="group">
-              <Card className="h-full transition-colors group-hover:bg-muted/50">
-                <CardHeader>
-                  <MapPin className="h-8 w-8 mb-2 text-primary" />
-                  <CardTitle>企画一覧・マップ</CardTitle>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 lg:gap-6">
+            <Link href="/booth" className="group">
+              <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
+                <CardHeader className="p-4">
+                  <Store className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
+                  <CardTitle className="text-lg">模擬店</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    クラス企画、模擬店、ステージなどの全企画をチェック。リアルタイムな混雑状況も確認できます。
+                <CardContent className="p-4 pt-0">
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    教室模擬、食品模擬の全店舗をチェック。
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/display" className="group">
+              <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
+                <CardHeader className="p-4">
+                  <Palette className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
+                  <CardTitle className="text-lg">文化部展示</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    文化部の展示をチェック。
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/stage" className="group">
+              <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
+                <CardHeader className="p-4">
+                  <Music className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
+                  <CardTitle className="text-lg">ステージ</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    野外・講堂での熱いパフォーマンス。
                   </p>
                 </CardContent>
               </Card>
             </Link>
             <Link href="/quiz" className="group">
-              <Card className="h-full transition-colors group-hover:bg-muted/50">
-                <CardHeader>
-                  <Star className="h-8 w-8 mb-2 text-primary" />
-                  <CardTitle>長田検定</CardTitle>
+              <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
+                <CardHeader className="p-4">
+                  <Star className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
+                  <CardTitle className="text-lg">長田検定</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    長田高校に関するクイズに挑戦！ハイスコアを目指してランクインしよう。
+                <CardContent className="p-4 pt-0">
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    長田高校のクイズに挑戦！ハイスコアを狙おう。
                   </p>
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/mypage" className="group">
-              <Card className="h-full transition-colors group-hover:bg-muted/50">
-                <CardHeader>
-                  <User className="h-8 w-8 mb-2 text-primary" />
-                  <CardTitle>マイページ</CardTitle>
+            <Link href="/mypage" className="group col-span-2 md:col-span-1">
+              <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
+                <CardHeader className="p-4">
+                  <User className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
+                  <CardTitle className="text-lg">マイページ</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    取得したファストパスの確認や、プロフィールの設定はこちらから。
+                <CardContent className="p-4 pt-0">
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    パスの確認やプロフィールの設定。
                   </p>
                 </CardContent>
               </Card>
