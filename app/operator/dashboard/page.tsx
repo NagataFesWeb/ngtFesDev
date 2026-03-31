@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { QRScanner } from '@/components/operator/QRScanner'
 
+import Image from 'next/image'
 import { toast } from 'sonner'
 import { useRef } from 'react'
-import { Users, Ticket, CheckCircle2, XCircle, Edit, Upload, ImageIcon, Lock } from 'lucide-react'
+import { Ticket, CheckCircle2, XCircle, Edit, ImageIcon, Lock } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -42,7 +43,7 @@ export default function OperatorDashboard() {
                 .single()
 
             if (!error && data) {
-                const s = data as any
+                const s = data as { value: string | boolean }
                 setIsEditEnabled(s.value === true || s.value === 'true')
             }
         }
@@ -58,12 +59,12 @@ export default function OperatorDashboard() {
         try {
             const { data, error } = await supabase.rpc('verify_and_use_ticket', {
                 p_qr_token: qrToken,
-                p_operator_token: operatorToken
-            } as any)
+                p_operator_token: operatorToken || ''
+            })
 
             if (error) throw error
 
-            const res = data as any
+            const res = data as { status: string; project_title?: string; message?: string; code?: string }
             if (res.status === 'ok') {
                 setScanResult({ status: 'success', project: res.project_title })
                 toast.success('チケットを確認しました！')
@@ -74,9 +75,10 @@ export default function OperatorDashboard() {
                 toast.error('エラー: ' + msg)
             }
 
-        } catch (err: any) {
-            setScanResult({ status: 'error', message: err.message })
-            toast.error('エラー: ' + err.message)
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : String(err)
+            setScanResult({ status: 'error', message: errorMessage })
+            toast.error('エラー: ' + errorMessage)
         } finally {
             setProcessingTicket(false)
         }
@@ -165,9 +167,7 @@ function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operator
                 .eq('project_id', projectId)
                 .single()
             if (data) {
-                // @ts-ignore
                 setDescription(data.description || '')
-                // @ts-ignore
                 setImageUrl(data.image_url || '')
             }
         }
@@ -192,8 +192,8 @@ function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operator
             const { data } = supabase.storage.from('project-images').getPublicUrl(filePath)
             setImageUrl(data.publicUrl)
             toast.success('画像をアップロードしました')
-        } catch (error: any) {
-            toast.error('アップロードエラー: ' + error.message)
+        } catch (error: unknown) {
+            toast.error('アップロードエラー: ' + (error instanceof Error ? error.message : String(error)))
         } finally {
             setUploading(false)
         }
@@ -206,15 +206,15 @@ function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operator
                 p_operator_token: operatorToken,
                 p_description: description,
                 p_image_url: imageUrl
-            } as any)
+            })
 
             if (error) throw error
-            const res = data as any
+            const res = data as { status: string; message: string }
             if (res.status !== 'success') throw new Error(res.message)
 
             toast.success('保存しました')
-        } catch (error: any) {
-            toast.error('保存エラー: ' + error.message)
+        } catch (error: unknown) {
+            toast.error('保存エラー: ' + (error instanceof Error ? error.message : String(error)))
         } finally {
             setSaving(false)
         }
@@ -251,7 +251,7 @@ function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operator
                     <div className="flex items-start gap-4">
                         <div className="border-2 border-dashed rounded-lg p-4 w-32 h-32 flex items-center justify-center bg-slate-50 dark:bg-slate-900 relative overflow-hidden">
                             {imageUrl ? (
-                                <img src={imageUrl} alt="Project" className="w-full h-full object-cover" />
+                                <Image src={imageUrl} alt="Project" fill className="object-cover" unoptimized />
                             ) : (
                                 <ImageIcon className="w-8 h-8 text-muted-foreground" />
                             )}

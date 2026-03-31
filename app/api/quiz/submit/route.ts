@@ -33,7 +33,7 @@ export async function POST(request: Request) {
             .eq('key', 'quiz_enabled')
             .single()
 
-        const s = settings as any
+        const s = settings as { value: boolean | string }
         if (settingsError || !settings || (s.value !== true && s.value !== 'true')) {
             return NextResponse.json({ status: 403, message: 'Currently unavailable' }, { status: 403 })
         }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json(data)
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Quiz submit error:', error)
         return NextResponse.json({ status: 500, message: 'Internal Server Error' }, { status: 500 })
     }

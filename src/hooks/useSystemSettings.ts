@@ -22,9 +22,11 @@ export function useSystemSettings() {
                 .select('*')
 
             if (data) {
-                const newSettings: any = {}
-                data.forEach((item: any) => {
-                    newSettings[item.key] = item.value // Assuming item.value is boolean from JSONB
+                const newSettings: Partial<SystemSettings> = {}
+                data.forEach((item: { key: string; value: unknown }) => {
+                    if (item.key === 'voting_enabled' || item.key === 'quiz_enabled' || item.key === 'fastpass_enabled') {
+                        newSettings[item.key] = item.value === true || item.value === 'true'
+                    }
                 })
                 setSettings(prev => ({ ...prev, ...newSettings }))
             }

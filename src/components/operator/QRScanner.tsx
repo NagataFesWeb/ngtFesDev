@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
+import { Html5Qrcode } from 'html5-qrcode'
 import { Button } from '@/components/ui/button'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import '@/components/operator/scanner.css'
@@ -79,17 +79,17 @@ export const QRScanner = ({ onScan, onError }: QRScannerProps) => {
                             stopScanner()
                             onScan(decodedText)
                         },
-                        (errorMessage) => {
+                        () => {
                             // ignore frame errors
                         }
                     )
                     setStarting(false)
 
-                } catch (err: any) {
+                } catch (err: unknown) {
                     console.error("Failed to start scanner instance", err)
                     let msg = "スキャナーの起動に失敗しました。"
                     if (typeof err === 'string') msg = err
-                    else if (err.message) msg = err.message
+                    else if (err instanceof Error) msg = err.message
 
                     setMountError(msg)
                     onError(msg)
@@ -98,11 +98,12 @@ export const QRScanner = ({ onScan, onError }: QRScannerProps) => {
                 }
             }, 100)
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Camera permission/setup error:", err)
-            let msg = "カメラの起動エラー: " + (err.message || "不明なエラー")
+            const errorObj = err instanceof Error ? err : new Error(String(err))
+            let msg = "カメラの起動エラー: " + (errorObj.message || "不明なエラー")
 
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            if (errorObj.name === 'NotAllowedError' || errorObj.name === 'PermissionDeniedError') {
                 msg = "カメラのアクセスが拒否されました。"
             }
 

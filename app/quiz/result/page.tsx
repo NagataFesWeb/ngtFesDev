@@ -28,7 +28,7 @@ function QuizResultContent() {
         const fetchRanking = async () => {
             const { data, error } = await supabase.rpc('get_quiz_ranking')
             if (!error && data) {
-                setRanking(data as any)
+                setRanking(data as RankingItem[])
             }
             setLoading(false)
         }

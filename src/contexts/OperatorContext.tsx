@@ -34,12 +34,15 @@ export const OperatorProvider = ({ children }: { children: React.ReactNode }) =>
         const storedProjectId = sessionStorage.getItem('operator_project_id')
 
         if (storedToken) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setOperatorTokenState(storedToken)
         }
         if (storedClass) {
+             
             setClassNameState(storedClass)
         }
         if (storedProjectId) {
+             
             setProjectIdState(storedProjectId)
         }
         setLoading(false)
