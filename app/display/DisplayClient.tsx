@@ -13,6 +13,22 @@ interface DisplayClientProps {
     initialProjects: ProjectWithStatus[]
 }
 
+const getDisplayFloor = (location: string | null): '2F' | '3F' | '4F' | null => {
+    if (!location) return null
+
+    if (location.includes('家庭準備室') || location.includes('作法室')) return '3F'
+
+    const roomMatch = location.match(/(\d{3})/)
+    if (!roomMatch) return null
+
+    const floor = roomMatch[1].charAt(0)
+    if (floor === '2') return '2F'
+    if (floor === '3') return '3F'
+    if (floor === '4') return '4F'
+
+    return null
+}
+
 export const DisplayClient = ({ initialProjects }: DisplayClientProps) => {
     const [projects] = useState<ProjectWithStatus[]>(initialProjects)
     const [searchTerm, setSearchTerm] = useState('')
@@ -33,8 +49,15 @@ export const DisplayClient = ({ initialProjects }: DisplayClientProps) => {
     const filteredProjects = projects.filter((project) => {
         const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (project.class_id && project.class_id.toLowerCase().includes(searchTerm.toLowerCase()))
-        
-        const matchesTab = activeTab === 'all' ? true : project.location?.includes(activeTab)
+
+        const projectFloor = getDisplayFloor(project.location)
+        const matchesTab =
+            activeTab === 'all'
+                ? true
+                : (activeTab === '20' && projectFloor === '2F') ||
+                (activeTab === '30' && projectFloor === '3F') ||
+                (activeTab === '40' && projectFloor === '4F')
+
         return matchesSearch && matchesTab
     })
 

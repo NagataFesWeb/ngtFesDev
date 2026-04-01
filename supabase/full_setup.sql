@@ -1100,12 +1100,12 @@ ON CONFLICT (class_id) DO NOTHING;
 
 -- Projects
 INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled, location, schedule, sort_order) VALUES
-('sakado', 'exhibition', '茶華道部', 'お茶と生け花の雅な世界。日本の伝統文化に触れてみませんか？', false, '105教室', NULL, 301),
+('sakado', 'exhibition', '茶華道部', 'お茶と生け花の雅な世界。日本の伝統文化に触れてみませんか？', false, '家庭準備室・作法室', NULL, 301),
 ('bijutu', 'exhibition', '美術部', '個性豊かな部員による独創的なアート作品の数々。', false, '306教室', NULL, 308),
 ('tosyo', 'exhibition', '図書委員会', '本の魅力を再発見！おすすめ本紹介やしおり製作など。', false, '204教室', NULL, 303),
 ('bungei', 'exhibition', '文芸部', '言葉に込めた想い。部誌の配布と作品展示を行います。', false, '303教室', NULL, 307),
 ('manken', 'exhibition', '漫画研究部', '魂の込もったイラスト・漫画展示。イラストのリクエストも募集中！', false, '302教室', NULL, 306),
-('suugaku', 'exhibition', '数学部', '数字 crop のパズルに挑戦！数学の楽しさを体験してください。', false, '203教室', NULL, 302),
+('suugaku', 'exhibition', '数学部', '数字のパズルに挑戦！数学の楽しさを体験してください。', false, '203教室', NULL, 302),
 ('syodo', 'exhibition', '書道部', '迫力の筆致をご覧あれ。伝統と革新が融合した書の世界。', false, '404教室', NULL, 310),
 ('ESS', 'exhibition', 'ESS 部', 'Enjoy English! 英語で楽しくコミュニケーションしましょう。', false, '405教室', NULL, 311),
 ('katei', 'exhibition', '家庭部', '手作りの温もりを感じる小物の展示。部員による自信作です。', false, '306教室', NULL, 309),
