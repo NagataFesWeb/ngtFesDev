@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProjectWithStatus } from '@/components/project/ProjectList'
 import { DisplayProjectCard } from '@/components/project/DisplayProjectCard'
+import { supabase } from '@/lib/supabase'
 
 interface DisplayClientProps {
     initialProjects: ProjectWithStatus[]
@@ -15,6 +17,18 @@ export const DisplayClient = ({ initialProjects }: DisplayClientProps) => {
     const [projects] = useState<ProjectWithStatus[]>(initialProjects)
     const [searchTerm, setSearchTerm] = useState('')
     const [activeTab, setActiveTab] = useState('all')
+    const [mapUrl, setMapUrl] = useState<string | null>(null)
+    const [mapLoading, setMapLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchMap = async () => {
+            setMapLoading(true)
+            const { data } = supabase.storage.from('public-assets').getPublicUrl('venue-map-booth.png')
+            setMapUrl(data.publicUrl)
+            setMapLoading(false)
+        }
+        fetchMap()
+    }, [])
 
     const filteredProjects = projects.filter((project) => {
         const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -29,6 +43,28 @@ export const DisplayClient = ({ initialProjects }: DisplayClientProps) => {
             <div className="flex flex-col gap-4">
                 <h1 className="text-3xl font-bold tracking-tight">文化部展示</h1>
                 <p className="text-muted-foreground">各文化部、委員会の展示企画一覧です。</p>
+            </div>
+
+            <div className="space-y-4">
+                <h2 className="text-xl font-semibold border-b pb-2">会場マップ</h2>
+                <div className="w-full aspect-video bg-muted rounded-md border flex items-center justify-center overflow-hidden relative">
+                    {!mapLoading && mapUrl ? (
+                        <Image
+                            src={mapUrl}
+                            alt="会場マップ"
+                            fill
+                            className="object-contain"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.parentElement?.querySelector('.fallback-content')?.classList.remove('hidden');
+                            }}
+                        />
+                    ) : null}
+                    <div className={mapUrl ? "hidden absolute inset-0 flex items-center justify-center text-muted-foreground flex-col gap-2 fallback-content" : "absolute inset-0 flex items-center justify-center text-muted-foreground flex-col gap-2 fallback-content"}>
+                        <span className="text-lg font-medium">Coming Soon...</span>
+                        <span className="text-sm">マップ準備中</span>
+                    </div>
+                </div>
             </div>
 
             <div className="space-y-6">
