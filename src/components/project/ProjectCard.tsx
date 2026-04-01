@@ -14,9 +14,10 @@ interface ProjectCardProps {
     project: Project
     congestionLevel?: number
     waitTime?: number // New prop
+    hideClassId?: boolean
 }
 
-export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectCardProps) => {
+export const ProjectCard = ({ project, congestionLevel = 1, waitTime, hideClassId = false }: ProjectCardProps) => {
     const getTypeLabel = (type: string | null) => {
         switch (type) {
             case 'food': return '食品'
@@ -56,7 +57,7 @@ export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectC
                         </div>
                     </div>
                     <CardTitle className="line-clamp-1 text-lg">{project.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{project.class_id}</p>
+                    {!hideClassId && <p className="text-sm text-muted-foreground">{project.class_id}</p>}
                 </CardHeader>
                 <CardContent className="p-4 pt-0 flex-1 flex flex-col">
                     {(project.location || project.schedule) && (
@@ -75,7 +76,7 @@ export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectC
                             )}
                         </div>
                     )}
-                    <p className="line-clamp-2 text-sm text-gray-500 mt-auto">
+                    <p className="line-clamp-2 text-sm text-gray-500 mt-auto whitespace-pre-wrap">
                         {project.description || '説明文がありません'}
                     </p>
                 </CardContent>

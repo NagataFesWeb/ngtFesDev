@@ -1,8 +1,13 @@
+import type { Metadata } from 'next'
 import { supabase } from '@/lib/supabase'
 import { DisplayClient } from './DisplayClient'
 import { CautionNotes } from '@/components/common/CautionNotes'
 import { PaymentNotes } from '@/components/common/PaymentNotes'
 import { ProjectWithStatus } from '@/components/project/ProjectList'
+
+export const metadata: Metadata = {
+    title: '展示',
+}
 
 export const revalidate = 60
 

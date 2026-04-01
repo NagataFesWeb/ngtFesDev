@@ -167,7 +167,9 @@ export default function ProjectDetailsPage() {
                         {/* <StatusIcon level={congestionLevel} showLabel className="scale-110" /> */}
                     </div>
                     <h1 className="text-3xl font-bold">{project.title}</h1>
-                    <p className="text-muted-foreground mt-1">{project.class_id}</p>
+                    {project.type !== 'stage' && project.type !== 'exhibition' && (
+                        <p className="text-muted-foreground mt-1">{project.class_id}</p>
+                    )}
                 </div>
 
                 <Card>
@@ -187,7 +189,7 @@ export default function ProjectDetailsPage() {
                 </Card>
 
                 <div className="prose max-w-none text-gray-700">
-                    <p>{project.description}</p>
+                    <p className="whitespace-pre-wrap">{project.description}</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

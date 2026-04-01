@@ -140,6 +140,7 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
                                     project={project as unknown as React.ComponentProps<typeof ProjectCard>['project']}
                                     congestionLevel={congestionMap[project.project_id]}
                                     waitTime={project.wait_time_min}
+                                    hideClassId
                                 />
                             ))}
                         </div>
