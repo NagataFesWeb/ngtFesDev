@@ -73,9 +73,9 @@ export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideC
                         {project.description || '説明文がありません'}
                     </p>
                 </CardContent>
-                <CardFooter className="px-7 py-4 mt-auto flex items-center justify-between border-t bg-logo-background">
-                    <span className="text-xs text-muted-foreground font-medium">混雑状況</span>
-                    <StatusIcon level={congestionLevel} showLabel />
+                <CardFooter className="px-7 py-6 mt-auto flex items-center justify-between border-t bg-logo-background">
+                    <span className="inline-flex h-6 items-center text-xs leading-none text-muted-foreground font-medium">混雑状況</span>
+                    <StatusIcon level={congestionLevel} showLabel className="h-6 items-center" />
                 </CardFooter>
             </Card>
         </Link>
