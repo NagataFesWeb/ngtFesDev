@@ -1077,7 +1077,7 @@ WHERE NOT EXISTS (
 );
 
 
--- 11.5 追加のシードデータ (from seed.sql)
+-- 11.5 追加のシードデータ
 -- Classes
 INSERT INTO public.classes (class_id, class_name, password_hash) VALUES
 ('buturi', '物理部', 'pass_buturi'),
@@ -1092,24 +1092,26 @@ INSERT INTO public.classes (class_id, class_name, password_hash) VALUES
 ('ESS', 'ESS 部', 'pass_ESS'),
 ('katei', '家庭部', 'pass_katei'),
 ('sinbun', '新聞委員会', 'pass_sinbun'),
-('seibutu', '生物部', 'pass_seibutu')
+('seibutu', '生物部', 'pass_seibutu'),
+('brass-band', '吹奏楽部', 'pass_brass_band'),
+('dance', 'ダンス部', 'pass_dance')
 ON CONFLICT (class_id) DO NOTHING;
 
 -- Projects
-INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled) VALUES
-('buturi', 'exhibition', '物理部', '物理現象の不思議を体験！驚きの実験が盛りだくさん。', false),
-('syasin', 'exhibition', '写真部', '部員たちが切り取った珠玉の一枚。一瞬の美しさを展示します。', false),
-('sakado', 'exhibition', '茶華道部', 'お茶と生け花の雅な世界。日本の伝統文化に触れてみませんか？', false),
-('bijutu', 'exhibition', '美術部', '個性豊かな部員による独創的なアート作品の数々。', false),
-('tosyo', 'exhibition', '図書委員会', '本の魅力を再発見！おすすめ本紹介やしおり製作など。', false),
-('bungei', 'exhibition', '文芸部', '言葉に込めた想い。部誌の配布と作品展示を行います。', false),
-('manken', 'exhibition', '漫画研究部', '魂の込もったイラスト・漫画展示。イラストのリクエストも募集中！', false),
-('suugaku', 'exhibition', '数学部', '数字のパズルに挑戦！数学の楽しさを体験してください。', false),
-('syodo', 'exhibition', '書道部', '迫力の筆致をご覧あれ。伝統と革新が融合した書の世界。', false),
-('ESS', 'exhibition', 'ESS 部', 'Enjoy English! 英語で楽しくコミュニケーションしましょう。', false),
-('katei', 'exhibition', '家庭部', '手作りの温もりを感じる小物の展示。部員による自信作です。', false),
-('sinbun', 'exhibition', '新聞委員会', '最近の学校ニュースを凝縮！長田高校の「今」をお届けします。', false),
-('seibutu', 'exhibition', '生物部', '校内に潜む生き物たちの生態を観察。生命の不思議に迫ります。', false)
+INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled, location, schedule) VALUES
+('sakado', 'exhibition', '茶華道部', 'お茶と生け花の雅な世界。日本の伝統文化に触れてみませんか？', false, NULL, NULL),
+('bijutu', 'exhibition', '美術部', '個性豊かな部員による独創的なアート作品の数々。', false, NULL, NULL),
+('tosyo', 'exhibition', '図書委員会', '本の魅力を再発見！おすすめ本紹介やしおり製作など。', false, NULL, NULL),
+('bungei', 'exhibition', '文芸部', '言葉に込めた想い。部誌の配布と作品展示を行います。', false, NULL, NULL),
+('manken', 'exhibition', '漫画研究部', '魂の込もったイラスト・漫画展示。イラストのリクエストも募集中！', false, NULL, NULL),
+('suugaku', 'exhibition', '数学部', '数字 crop のパズルに挑戦！数学の楽しさを体験してください。', false, NULL, NULL),
+('syodo', 'exhibition', '書道部', '迫力の筆致をご覧あれ。伝統と革新が融合した書の世界。', false, NULL, NULL),
+('ESS', 'exhibition', 'ESS 部', 'Enjoy English! 英語で楽しくコミュニケーションしましょう。', false, NULL, NULL),
+('katei', 'exhibition', '家庭部', '手作りの温もりを感じる小物の展示。部員による自信作です。', false, NULL, NULL),
+('sinbun', 'exhibition', '新聞委員会', '最近の学校ニュースを凝縮！長田高校の「今」をお届けします。', false, NULL, NULL),
+('seibutu', 'exhibition', '生物部', '校内に潜む生き物たちの生態を観察。生命の不思議に迫ります。', false, NULL, NULL),
+('brass-band', 'stage', '吹奏楽部', '吹奏楽部による演奏をお楽しみください。', false, '講堂ステージ', '【１日目】 9:30 ～10:20\n【２日目】13:25～14:15'),
+('dance', 'stage', 'ダンス部', 'ダンス部によるパフォーマンスをお楽しみください。', false, '野外ステージ', '【２日目】9:15～9:55')
 ON CONFLICT DO NOTHING;
 
 -- Init Congestion for projects
