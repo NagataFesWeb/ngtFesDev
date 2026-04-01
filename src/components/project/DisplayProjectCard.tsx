@@ -30,7 +30,7 @@ export const DisplayProjectCard = ({ project, hideClassId = false }: DisplayProj
                         <span className="text-lg font-medium">Coming Soon...</span>
                     </div>
                 )}
-                <CardHeader className="px-7 py-5 pb-2">
+                <CardHeader className="px-7 pt-3 pb-3">
                     <div className="flex items-center justify-between mb-2">
                         <Badge variant="outline" className={getProjectTypeBadgeClassName(project.type, project.location)}>
                             {getProjectTypeLabel(project.type, project.location)}
