@@ -141,6 +141,7 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
                                     congestionLevel={congestionMap[project.project_id]}
                                     waitTime={project.wait_time_min}
                                     hideClassId
+                                    hideCongestion
                                 />
                             ))}
                         </div>

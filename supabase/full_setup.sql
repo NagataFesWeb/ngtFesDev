@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS public.projects (
     fastpass_enabled BOOLEAN DEFAULT false,
     rotation_time_min INTEGER DEFAULT 10, -- 1グループ分の待ち時間（分）
     max_queue_size INTEGER DEFAULT 50,    -- 最大待機人数
+    sort_order INTEGER,                   -- 表示順序
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -754,7 +755,7 @@ BEGIN
         public.get_estimated_wait_time(p.project_id) as wait_time_min
     FROM public.projects p
     LEFT JOIN public.congestion c ON p.project_id = c.project_id
-    ORDER BY p.class_id;
+    ORDER BY p.sort_order ASC, p.class_id ASC;
 END;
 $$;
 
@@ -1047,25 +1048,25 @@ INSERT INTO public.classes (class_id, class_name, password_hash) VALUES
 ON CONFLICT (class_id) DO NOTHING;
 
 -- 11.3 プロジェクトデータ
-INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled, image_url) VALUES
+INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled, image_url, location, sort_order) VALUES
 -- 2年：クラス展示
-('2-1', 'class', 'VS 2-1',       '2-1のVSパークへようこそ！',     true,  NULL),
-('2-2', 'class', 'Haunted 2-2',  '最恐のお化け屋敷',              false, NULL),
-('2-3', 'class', 'Casino 2-3',   '大人の社交場カジノ',            true,  NULL),
-('2-4', 'class', 'Maze 2-4',     '脱出不可能迷路',                false, NULL),
-('2-5', 'class', 'Cinema 2-5',   '自作映画上映',                  true,  NULL),
-('2-6', 'class', 'Photo 2-6',    '映えスポット写真館',            false, NULL),
-('2-7', 'class', 'Coffee 2-7',   '喫茶店 (展示)',                  true,  NULL),
-('2-8', 'class', 'Game 2-8',     'レトロゲームセンター',          false, NULL),
+('2-1', 'class', 'VS 2-1',       '2-1のVSパークへようこそ！',     true,  NULL, '301教室', 101),
+('2-2', 'class', 'Haunted 2-2',  '最恐のお化け屋敷',              false, NULL, '302教室', 102),
+('2-3', 'class', 'Casino 2-3',   '大人の社交場カジノ',            true,  NULL, '303教室', 103),
+('2-4', 'class', 'Maze 2-4',     '脱出不可能迷路',                false, NULL, '304教室', 104),
+('2-5', 'class', 'Cinema 2-5',   '自作映画上映',                  true,  NULL, '305教室', 105),
+('2-6', 'class', 'Photo 2-6',    '映えスポット写真館',            false, NULL, '306教室', 106),
+('2-7', 'class', 'Coffee 2-7',   '喫茶店 (展示)',                  true,  NULL, '307教室', 107),
+('2-8', 'class', 'Game 2-8',     'レトロゲームセンター',          false, NULL, '308教室', 108),
 -- 3年：フード
-('3-1', 'food',  '3-1 Yakisoba', '美味しい焼きそば',              false, NULL),
-('3-2', 'food',  '3-2 Curry',    'スパイスから作ったカレー',      false, NULL),
-('3-3', 'food',  '3-3 Crepe',    '甘くて美味しいクレープ',        false, NULL),
-('3-4', 'food',  '3-4 Frankfurt','アツアツフランクフルト',        false, NULL),
-('3-5', 'food',  '3-5 Tapioca',  'タピオカドリンク専門店',        false, NULL),
-('3-6', 'food',  '3-6 Burger',   '特製ハンバーガー',              false, NULL),
-('3-7', 'food',  '3-7 Udon',     '手打ちうどん',                  false, NULL),
-('3-8', 'food',  '3-8 Ice',      'サーティワンアイスクリーム',    false, NULL)
+('3-1', 'food',  '3-1 Yakisoba', '美味しい焼きそば',              false, NULL, '職員室前テント北側', 201),
+('3-2', 'food',  '3-2 Curry',    'スパイスから作ったカレー',      false, NULL, '職員室前テント南側', 202),
+('3-3', 'food',  '3-3 Crepe',    '甘くて美味しいクレープ',        false, NULL, '校門前テント北側', 203),
+('3-4', 'food',  '3-4 Frankfurt','アツアツフランクフルト',        false, NULL, '校門前テント南側', 204),
+('3-5', 'food',  '3-5 Tapioca',  'タピオカドリンク専門店',        false, NULL, '中庭北側テント周り', 205),
+('3-6', 'food',  '3-6 Burger',   '特製ハンバーガー',              false, NULL, '中庭南側テント周り', 206),
+('3-7', 'food',  '3-7 Udon',     '手打ちうどん',                  false, NULL, 'ピロティ東側', 207),
+('3-8', 'food',  '3-8 Ice',      'サーティワンアイスクリーム',    false, NULL, 'ピロティ西側', 208)
 ON CONFLICT DO NOTHING;
 
 -- 11.4 全プロジェクトの混雑度初期値（レベル1）
@@ -1098,20 +1099,20 @@ INSERT INTO public.classes (class_id, class_name, password_hash) VALUES
 ON CONFLICT (class_id) DO NOTHING;
 
 -- Projects
-INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled, location, schedule) VALUES
-('sakado', 'exhibition', '茶華道部', 'お茶と生け花の雅な世界。日本の伝統文化に触れてみませんか？', false, NULL, NULL),
-('bijutu', 'exhibition', '美術部', '個性豊かな部員による独創的なアート作品の数々。', false, NULL, NULL),
-('tosyo', 'exhibition', '図書委員会', '本の魅力を再発見！おすすめ本紹介やしおり製作など。', false, NULL, NULL),
-('bungei', 'exhibition', '文芸部', '言葉に込めた想い。部誌の配布と作品展示を行います。', false, NULL, NULL),
-('manken', 'exhibition', '漫画研究部', '魂の込もったイラスト・漫画展示。イラストのリクエストも募集中！', false, NULL, NULL),
-('suugaku', 'exhibition', '数学部', '数字 crop のパズルに挑戦！数学の楽しさを体験してください。', false, NULL, NULL),
-('syodo', 'exhibition', '書道部', '迫力の筆致をご覧あれ。伝統と革新が融合した書の世界。', false, NULL, NULL),
-('ESS', 'exhibition', 'ESS 部', 'Enjoy English! 英語で楽しくコミュニケーションしましょう。', false, NULL, NULL),
-('katei', 'exhibition', '家庭部', '手作りの温もりを感じる小物の展示。部員による自信作です。', false, NULL, NULL),
-('sinbun', 'exhibition', '新聞委員会', '最近の学校ニュースを凝縮！長田高校の「今」をお届けします。', false, NULL, NULL),
-('seibutu', 'exhibition', '生物部', '校内に潜む生き物たちの生態を観察。生命の不思議に迫ります。', false, NULL, NULL),
-('brass-band', 'stage', '吹奏楽部', '吹奏楽部による演奏をお楽しみください。', false, '講堂ステージ', '【１日目】 9:30 ～10:20\n【２日目】13:25～14:15'),
-('dance', 'stage', 'ダンス部', 'ダンス部によるパフォーマンスをお楽しみください。', false, '野外ステージ', '【２日目】9:15～9:55')
+INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled, location, schedule, sort_order) VALUES
+('sakado', 'exhibition', '茶華道部', 'お茶と生け花の雅な世界。日本の伝統文化に触れてみませんか？', false, '105教室', NULL, 301),
+('bijutu', 'exhibition', '美術部', '個性豊かな部員による独創的なアート作品の数々。', false, '306教室', NULL, 308),
+('tosyo', 'exhibition', '図書委員会', '本の魅力を再発見！おすすめ本紹介やしおり製作など。', false, '204教室', NULL, 303),
+('bungei', 'exhibition', '文芸部', '言葉に込めた想い。部誌の配布と作品展示を行います。', false, '303教室', NULL, 307),
+('manken', 'exhibition', '漫画研究部', '魂の込もったイラスト・漫画展示。イラストのリクエストも募集中！', false, '302教室', NULL, 306),
+('suugaku', 'exhibition', '数学部', '数字 crop のパズルに挑戦！数学の楽しさを体験してください。', false, '203教室', NULL, 302),
+('syodo', 'exhibition', '書道部', '迫力の筆致をご覧あれ。伝統と革新が融合した書の世界。', false, '404教室', NULL, 310),
+('ESS', 'exhibition', 'ESS 部', 'Enjoy English! 英語で楽しくコミュニケーションしましょう。', false, '405教室', NULL, 311),
+('katei', 'exhibition', '家庭部', '手作りの温もりを感じる小物の展示。部員による自信作です。', false, '306教室', NULL, 309),
+('sinbun', 'exhibition', '新聞委員会', '最近の学校ニュースを凝縮！長田高校の「今」をお届けします。', false, '204教室', NULL, 304),
+('seibutu', 'exhibition', '生物部', '校内に潜む生き物たちの生態を観察。生命の不思議に迫ります。', false, '406教室', NULL, 312),
+('brass-band', 'stage', '吹奏楽部', '吹奏楽部による演奏をお楽しみください。', false, '講堂ステージ', '【１日目】 9:30 ～10:20\n【２日目】13:25～14:15', 401),
+('dance', 'stage', 'ダンス部', 'ダンス部によるパフォーマンスをお楽しみください。', false, '野外ステージ', '【２日目】9:15～9:55', 402)
 ON CONFLICT DO NOTHING;
 
 -- Init Congestion for projects
