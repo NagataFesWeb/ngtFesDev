@@ -16,6 +16,7 @@ import { useSession } from '@/contexts/SessionContext'
 import { toast } from 'sonner'
 import { ArrowLeft, Ticket } from 'lucide-react'
 import { useSystemSettings } from '@/hooks/useSystemSettings'
+import { getProjectTypeBadgeClassName, getProjectTypeLabel, normalizeEscapedNewlines } from '@/lib/projectDisplay'
 // import qrcode from 'qrcode.react' // Will add later
 
 type Project = Database['public']['Tables']['projects']['Row']
@@ -148,6 +149,9 @@ export default function ProjectDetailsPage() {
     if (loading) return <div className="flex justify-center p-12"><LoadingSpinner /></div>
     if (error || !project) return <div className="p-8"><ErrorMessage message={error || 'Project not found'} /></div>
 
+    const normalizedSchedule = normalizeEscapedNewlines(project.schedule) ?? ''
+    const normalizedDescription = normalizeEscapedNewlines(project.description) ?? ''
+
     return (
         <div className="container mx-auto px-4 md:px-6 py-8 max-w-3xl">
             <Button variant="ghost" className="mb-4 pl-0" onClick={() => router.back()}>
@@ -155,39 +159,65 @@ export default function ProjectDetailsPage() {
             </Button>
 
             <div className="space-y-6">
-                {project.image_url && (
+                {project.image_url ? (
                     <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted relative">
                         <Image src={project.image_url} alt={project.title} fill className="object-cover" />
+                    </div>
+                ) : (
+                    <div className="aspect-video w-full rounded-lg bg-muted border flex items-center justify-center text-muted-foreground flex-col gap-2">
+                        <span className="text-lg font-medium">Coming Soon...</span>
                     </div>
                 )}
 
                 <div>
                     <div className="flex items-center justify-between mb-2">
-                        <Badge variant="outline" className="text-base">{project.type}</Badge>
-                        {/* <StatusIcon level={congestionLevel} showLabel className="scale-110" /> */}
+                        <Badge
+                            variant="outline"
+                            className={`text-sm font-medium px-3 py-1 ${getProjectTypeBadgeClassName(project.type, project.location)}`}
+                        >
+                            {getProjectTypeLabel(project.type, project.location)}
+                        </Badge>
                     </div>
-                    <h1 className="text-3xl font-bold">{project.title}</h1>
-                    <p className="text-muted-foreground mt-1">{project.class_id}</p>
+                    <h1 className="text-3xl font-bold mb-1">{project.title}</h1>
+                    <div className="flex flex-col gap-1.5 mt-3 text-sm font-medium">
+                        {project.type !== 'stage' && project.type !== 'exhibition' && project.class_id && (
+                            <p className="text-muted-foreground">{project.class_id}</p>
+                        )}
+                        {project.location && (
+                            <div className="flex items-center gap-2">
+                                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-bold">場所</span>
+                                <span className="text-foreground">{project.location}</span>
+                            </div>
+                        )}
+                        {project.schedule && (
+                            <div className="flex items-center gap-2">
+                                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-bold">出演時間</span>
+                                <span className="text-foreground whitespace-pre-wrap">{normalizedSchedule}</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                <Card>
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium text-muted-foreground">現在の混雑状況</span>
-                            <StatusIcon level={congestionLevel} showLabel className="mt-1" />
-                        </div>
-                        <div className="text-right flex flex-col items-end">
-                            <span className="text-sm font-medium text-muted-foreground">推定待ち時間</span>
-                            <div className="flex items-center mt-1">
-                                <span className="text-2xl font-bold">{waitTime}</span>
-                                <span className="text-sm ml-1">分</span>
+                {project.type !== 'stage' && project.type !== 'exhibition' && (
+                    <Card>
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div className="flex flex-col">
+                                <span className="text-sm font-medium text-muted-foreground">現在の混雑状況</span>
+                                <StatusIcon level={congestionLevel} showLabel className="mt-1" />
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                            <div className="text-right flex flex-col items-end">
+                                <span className="text-sm font-medium text-muted-foreground">推定待ち時間</span>
+                                <div className="flex items-center mt-1">
+                                    <span className="text-2xl font-bold">{waitTime}</span>
+                                    <span className="text-sm ml-1">分</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <div className="prose max-w-none text-gray-700">
-                    <p>{project.description}</p>
+                    <p className="whitespace-pre-wrap">{normalizedDescription}</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -7,16 +7,20 @@ import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"] });
-const limelight = Limelight({ 
+const limelight = Limelight({
   weight: "400",
   subsets: ["latin"],
-  variable: "--font-limelight", 
+  variable: "--font-limelight",
 });
 
+const SITE_NAME = "第79回 長田高校文化祭2026「SOLA」 特設HP";
+
 export const metadata: Metadata = {
-  title: "第79回 長田高校文化祭2026「SOLA」 HP",
+  title: {
+    template: `%s | ${SITE_NAME}`,
+    default: SITE_NAME,
+  },
   description: "長田高校文化祭2026 HPへようこそ！模擬店情報、ステージイベント、アクセス方法など、文化祭の全てを網羅。最新情報をお届けします。",
-  // ここにGoogleの確認コードを追加します
   verification: {
     google: "4oOH8zU95W7h4bcVytdDtoTF0pPBEDOQpkILrk7Obw8",
   },
@@ -29,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" suppressHydrationWarning>
-      <body className={cn(inter.className,  limelight.variable)} suppressHydrationWarning>
+      <body className={cn(inter.className, limelight.variable)} suppressHydrationWarning>
         <Providers>
           <div className="flex min-h-screen flex-col">
             <Header />

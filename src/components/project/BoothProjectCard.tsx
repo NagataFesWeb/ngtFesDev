@@ -7,43 +7,37 @@ import { Badge } from '@/components/ui/badge'
 import { MapPin, Clock } from 'lucide-react'
 import { StatusIcon } from '@/components/common/StatusIcon'
 import { Database } from '@/types/database.types'
+import { getProjectTypeBadgeClassName, getProjectTypeLabel, getNormalizedProjectSchedule } from '@/lib/projectDisplay'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
-interface ProjectCardProps {
+interface BoothProjectCardProps {
     project: Project
     congestionLevel?: number
-    waitTime?: number // New prop
+    waitTime?: number 
+    hideClassId?: boolean
 }
 
-export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectCardProps) => {
-    const getTypeLabel = (type: string | null) => {
-        switch (type) {
-            case 'food': return '食品'
-            case 'class': return 'クラス'
-            case 'stage': return 'ステージ'
-            case 'exhibition': return '展示'
-            default: return 'その他'
-        }
-    }
+export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideClassId = false }: BoothProjectCardProps) => {
+    const normalizedSchedule = getNormalizedProjectSchedule(project)
 
     return (
         <Link href={`/projects/${project.project_id}`}>
-            <Card className="h-full overflow-hidden transition-all hover:shadow-md hover:border-primary/50 flex flex-col bg-gradient-to-b from-white from-80% to-logo-background to-20%">
-                {project.image_url && (
+            <Card className="h-full overflow-hidden transition-all hover:shadow-md hover:border-primary/50 flex flex-col bg-white py-0">
+                {project.image_url ? (
                     <div className="aspect-[4/3] w-full overflow-hidden bg-muted relative">
-                        {/* Changed aspect-video to aspect-[4/3] for better poster visibility. 
-                            Using object-contain with a background or object-cover?
-                            '見切れている' usually means important content is lost.
-                            Let's try object-contain with a neutral background, or just cover with taller aspect.
-                            Let's go with cover + aspect-[4/3] (closer to square/portrait) which is better for posters than video(16:9).
-                        */}
                         <Image src={project.image_url} alt={project.title} fill className="object-cover transition-transform hover:scale-105" />
                     </div>
+                ) : (
+                    <div className="aspect-[4/3] w-full bg-muted border-b flex items-center justify-center text-muted-foreground flex-col gap-2">
+                        <span className="text-lg font-medium">Coming Soon...</span>
+                    </div>
                 )}
-                <CardHeader className="p-4 pb-2">
+                <CardHeader className="px-7 pt-3 pb-3">
                     <div className="flex items-center justify-between mb-2">
-                        <Badge variant="outline">{getTypeLabel(project.type)}</Badge>
+                        <Badge variant="outline" className={getProjectTypeBadgeClassName(project.type, project.location)}>
+                            {getProjectTypeLabel(project.type, project.location)}
+                        </Badge>
                         <div className="flex gap-1">
                             {waitTime !== undefined && waitTime > 0 && (
                                 <Badge variant="destructive" className="text-xs">
@@ -56,9 +50,9 @@ export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectC
                         </div>
                     </div>
                     <CardTitle className="line-clamp-1 text-lg">{project.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{project.class_id}</p>
+                    {!hideClassId && <p className="text-sm text-muted-foreground">{project.class_id}</p>}
                 </CardHeader>
-                <CardContent className="p-4 pt-0 flex-1 flex flex-col">
+                <CardContent className="px-7 py-5 pt-0 flex-1 flex flex-col">
                     {(project.location || project.schedule) && (
                         <div className="text-sm font-medium text-foreground flex flex-col gap-1 mb-2">
                             {project.location && (
@@ -70,18 +64,18 @@ export const ProjectCard = ({ project, congestionLevel = 1, waitTime }: ProjectC
                             {project.schedule && (
                                 <div className="flex items-start gap-1.5 align-middle">
                                     <Clock className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
-                                    <span className="whitespace-pre-wrap">{project.schedule}</span>
+                                    <span className="whitespace-pre-wrap">{normalizedSchedule}</span>
                                 </div>
                             )}
                         </div>
                     )}
-                    <p className="line-clamp-2 text-sm text-gray-500 mt-auto">
+                    <p className="line-clamp-2 text-sm text-gray-500 mt-auto whitespace-pre-wrap">
                         {project.description || '説明文がありません'}
                     </p>
                 </CardContent>
-                <CardFooter className="p-4 pt-0 mt-auto flex items-center justify-between border-t bg-logo-background px-4 py-3">
-                    <span className="text-xs text-muted-foreground">混雑状況</span>
-                    <StatusIcon level={congestionLevel} showLabel />
+                <CardFooter className="px-7 py-6 mt-auto flex items-center justify-between border-t bg-logo-background">
+                    <span className="inline-flex h-6 items-center text-xs leading-none text-muted-foreground font-medium">混雑状況</span>
+                    <StatusIcon level={congestionLevel} showLabel className="h-6 items-center" />
                 </CardFooter>
             </Card>
         </Link>

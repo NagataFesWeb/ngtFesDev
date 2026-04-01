@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { QRScanner } from '@/components/operator/QRScanner'
+import { BoothProjectCard } from '@/components/project/BoothProjectCard'
+import { DisplayProjectCard } from '@/components/project/DisplayProjectCard'
 
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -17,6 +19,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Database } from '@/types/database.types'
+
+type Project = Database['public']['Tables']['projects']['Row']
 
 export default function OperatorDashboard() {
     const { operatorToken, className, projectId, loading: authLoading } = useOperator()
@@ -27,6 +32,10 @@ export default function OperatorDashboard() {
     const [processingTicket, setProcessingTicket] = useState(false)
     const [scanResult, setScanResult] = useState<{ status: string, message?: string, project?: string } | null>(null)
     const [isEditEnabled, setIsEditEnabled] = useState(true)
+    const [previewProject, setPreviewProject] = useState<Project | null>(null)
+    const [previewCongestionLevel, setPreviewCongestionLevel] = useState(1)
+    const [previewWaitTime, setPreviewWaitTime] = useState<number | undefined>(undefined)
+    const [previewLoading, setPreviewLoading] = useState(true)
 
     useEffect(() => {
         if (!authLoading && !operatorToken) {
@@ -50,6 +59,38 @@ export default function OperatorDashboard() {
         fetchSettings()
         setLoading(false)
     }, [])
+
+    useEffect(() => {
+        const fetchPreviewData = async () => {
+            if (!projectId) {
+                setPreviewProject(null)
+                setPreviewLoading(false)
+                return
+            }
+
+            setPreviewLoading(true)
+            try {
+                const [{ data: projectData, error: projectError }, { data: congestionData }, { data: waitTimeData }] = await Promise.all([
+                    supabase.from('projects').select('*').eq('project_id', projectId).single(),
+                    supabase.from('congestion').select('level').eq('project_id', projectId).single(),
+                    supabase.rpc('get_estimated_wait_time', { p_project_id: projectId }),
+                ])
+
+                if (projectError) throw projectError
+
+                setPreviewProject(projectData)
+                setPreviewCongestionLevel(congestionData?.level ?? 1)
+                setPreviewWaitTime(typeof waitTimeData === 'number' ? waitTimeData : undefined)
+            } catch (error: unknown) {
+                setPreviewProject(null)
+                toast.error('プレビューデータ取得エラー: ' + (error instanceof Error ? error.message : String(error)))
+            } finally {
+                setPreviewLoading(false)
+            }
+        }
+
+        fetchPreviewData()
+    }, [projectId])
 
 
 
@@ -140,8 +181,34 @@ export default function OperatorDashboard() {
 
                 <TabsContent value="preview" className="mt-4">
                     <Card>
-                        <CardContent className="pt-6 text-center text-muted-foreground">
-                            Coming Soon... (企画詳細ページで確認してください)
+                        <CardHeader>
+                            <CardTitle>企画カードプレビュー</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                            {previewLoading ? (
+                                <div className="flex justify-center py-8">
+                                    <LoadingSpinner />
+                                </div>
+                            ) : !previewProject ? (
+                                <div className="py-6 text-center text-muted-foreground">
+                                    プレビュー可能な企画が見つかりませんでした。
+                                </div>
+                            ) : (
+                                <div className="max-w-md mx-auto">
+                                    {(previewProject.type === 'class' || previewProject.type === 'food') ? (
+                                        <BoothProjectCard
+                                            project={previewProject as React.ComponentProps<typeof BoothProjectCard>['project']}
+                                            congestionLevel={previewCongestionLevel}
+                                            waitTime={previewWaitTime}
+                                        />
+                                    ) : (
+                                        <DisplayProjectCard
+                                            project={previewProject as React.ComponentProps<typeof DisplayProjectCard>['project']}
+                                            hideClassId
+                                        />
+                                    )}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

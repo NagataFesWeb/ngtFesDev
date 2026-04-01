@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
-import { ProjectCard } from '@/components/project/ProjectCard'
+import { DisplayProjectCard } from '@/components/project/DisplayProjectCard'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
@@ -15,14 +15,7 @@ interface StageClientProps {
 
 export const StageClient = ({ initialProjects }: StageClientProps) => {
     const [projects] = useState<ProjectWithStatus[]>(initialProjects)
-    const [congestionMap, setCongestionMap] = useState<Record<string, number>>(() => {
-        const map: Record<string, number> = {}
-        initialProjects.forEach((p) => {
-            map[p.project_id] = p.congestion_level
-        })
-        return map
-    })
-
+    
     const [searchTerm, setSearchTerm] = useState('')
     const [activeTab, setActiveTab] = useState('all')
     
@@ -40,36 +33,11 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
         fetchMap()
     }, [])
 
-    useEffect(() => {
-        const channel = supabase
-            .channel('public:congestion')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'congestion',
-                },
-                (payload) => {
-                    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-                        const newRecord = payload.new as { project_id: string; level: number }
-                        setCongestionMap(prev => ({ ...prev, [newRecord.project_id]: newRecord.level }))
-                    }
-                }
-            )
-            .subscribe()
-
-        return () => {
-            supabase.removeChannel(channel)
-        }
-    }, [])
-
     const filteredProjects = projects.filter((project) => {
         const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (project.class_id && project.class_id.toLowerCase().includes(searchTerm.toLowerCase()))
         
         // Location will determine if it's 野外ステージ or 講堂ステージ
-        // If location is not strictly set yet, we might fallback.
         const projLoc = project.location || ''
         const matchesTab = activeTab === 'all' ? true : projLoc.includes(activeTab)
 
@@ -135,11 +103,10 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredProjects.map((project) => (
-                                <ProjectCard
+                                <DisplayProjectCard
                                     key={project.project_id}
-                                    project={project as unknown as React.ComponentProps<typeof ProjectCard>['project']}
-                                    congestionLevel={congestionMap[project.project_id]}
-                                    waitTime={project.wait_time_min}
+                                    project={project as unknown as React.ComponentProps<typeof DisplayProjectCard>['project']}
+                                    hideClassId
                                 />
                             ))}
                         </div>

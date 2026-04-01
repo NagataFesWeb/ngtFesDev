@@ -60,6 +60,22 @@ PGPASSWORD="<YOUR_DB_PASSWORD>" psql -h db.<YOUR_PROJECT_REF>.supabase.co -p 543
 > [!NOTE]
 > `full_setup.sql` には、必要なマイグレーション手順と初期データがすべて含まれています。これを実行するだけで、必須テーブルの構築からクイズ機能・ファストパスの初期設定までが完了します。
 
+### 5. 会場マップ・タイムテーブル画像のセットアップ (Storage Setup)
+
+模擬店・展示・ステージ画面で表示する画像を、Supabase Storage に配置する必要があります。
+
+1. **バケットの作成**:
+   * Supabase Dashboard の **Storage** を開き、`public-assets` という名前のバケットを作成してください。
+   * **Public access** は **ON**（公開）に設定してください。
+2. **画像のアップロード先**:
+   * `public-assets` バケットの **ルート直下**（フォルダなし）に配置してください。
+3. **ファイル名（完全一致）**:
+   * `venue-map-booth.png`
+     * 模擬店画面の「会場マップ」で使用
+     * 展示画面の「会場マップ」でも同じ画像として使用
+   * `timetable-stage.png`
+     * ステージ画面の「タイムテーブル」で使用
+
 ### 6. クイズ報酬（壁紙）のセットアップ (Storage Setup)
 
 クイズの累計スコア報酬として配布する壁紙画像をSupabase Storageに配置する必要があります。

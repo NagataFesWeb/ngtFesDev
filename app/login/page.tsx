@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
@@ -13,6 +14,7 @@ export default function LoginPage() {
     const router = useRouter()
     const [loginId, setLoginId] = useState('')
     const [password, setPassword] = useState('')
+    const [nickname, setNickname] = useState('')
     const [loading, setLoading] = useState(false)
     const [isSignUp, setIsSignUp] = useState(false)
 
@@ -25,12 +27,26 @@ export default function LoginPage() {
 
         try {
             if (isSignUp) {
+                // ログインIDのバリデーション
+                if (!/^[a-zA-Z0-9_]+$/.test(loginId)) {
+                    throw new Error('ログインIDは半角英数字とアンダースコアのみ使用できます')
+                }
+                if (loginId.length < 3) {
+                    throw new Error('ログインIDは3文字以上で入力してください')
+                }
+                if (password.length < 6) {
+                    throw new Error('パスワードは6文字以上で入力してください')
+                }
+
+                const signUpNickname = nickname.trim() || 'Guest'
+
                 const { error } = await supabase.auth.signUp({
                     email: dummyEmail,
                     password,
                     options: {
                         data: {
-                            login_id: loginId
+                            login_id: loginId,
+                            full_name: signUpNickname
                         }
                     }
                 })
@@ -75,21 +91,57 @@ export default function LoginPage() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleAuth} className="space-y-4">
-                        <div className="space-y-2">
+                        {isSignUp && (
+                            <div className="space-y-1.5">
+                                <Label htmlFor="nickname">ニックネーム</Label>
+                                <Input
+                                    id="nickname"
+                                    type="text"
+                                    placeholder="例: たろう"
+                                    value={nickname}
+                                    onChange={(e) => setNickname(e.target.value)}
+                                    maxLength={20}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    1〜20文字。日本語・英数字・記号が使えます（空欄の場合「Guest」になります）
+                                </p>
+                            </div>
+                        )}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="loginId">
+                                ログインID <span className="text-destructive">*</span>
+                            </Label>
                             <Input
+                                id="loginId"
                                 type="text"
-                                placeholder="ログインID (例: myname123)"
+                                placeholder="例: MyName123"
                                 value={loginId}
                                 onChange={(e) => setLoginId(e.target.value)}
                                 required
                             />
+                            {isSignUp && (
+                                <p className="text-xs text-muted-foreground">
+                                    3文字以上。半角英字（**大文字も使用可能**）、数字、アンダースコア（_）のみ
+                                </p>
+                            )}
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="password">
+                                パスワード <span className="text-destructive">*</span>
+                            </Label>
                             <Input
+                                id="password"
                                 type="password"
-                                placeholder="パスワード"
+                                placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                             />
+                            {isSignUp && (
+                                <p className="text-xs text-muted-foreground">
+                                    6文字以上。半角英字・数字・記号が使えます
+                                </p>
+                            )}
                         </div>
                         <Button type="submit" className="w-full" disabled={loading}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

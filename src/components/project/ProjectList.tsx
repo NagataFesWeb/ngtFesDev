@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ProjectCard } from '@/components/project/ProjectCard'
+import { BoothProjectCard } from '@/components/project/BoothProjectCard'
+import { DisplayProjectCard } from '@/components/project/DisplayProjectCard'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
@@ -117,14 +118,25 @@ export const ProjectList = ({ initialProjects }: ProjectListProps) => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredProjects.map((project) => (
-                                <ProjectCard
-                                    key={project.project_id}
-                                    project={project as unknown as React.ComponentProps<typeof ProjectCard>['project']}
-                                    congestionLevel={congestionMap[project.project_id]}
-                                    waitTime={project.wait_time_min}
-                                />
-                            ))}
+                            {filteredProjects.map((project) => {
+                                if (project.type === 'stage' || project.type === 'exhibition') {
+                                    return (
+                                        <DisplayProjectCard
+                                            key={project.project_id}
+                                            project={project as unknown as React.ComponentProps<typeof DisplayProjectCard>['project']}
+                                            hideClassId={project.type === 'stage' || project.type === 'exhibition'}
+                                        />
+                                    )
+                                }
+                                return (
+                                    <BoothProjectCard
+                                        key={project.project_id}
+                                        project={project as unknown as React.ComponentProps<typeof BoothProjectCard>['project']}
+                                        congestionLevel={congestionMap[project.project_id]}
+                                        waitTime={project.wait_time_min}
+                                    />
+                                )
+                            })}
                         </div>
                     )}
                 </TabsContent>

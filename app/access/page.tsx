@@ -1,7 +1,12 @@
+import type { Metadata } from 'next'
 import Image from "next/image";
 import ngtmap from "./ngtmap.png";
 import { CautionNotes } from "@/components/common/CautionNotes";
 import { PaymentNotes } from "@/components/common/PaymentNotes";
+
+export const metadata: Metadata = {
+    title: 'アクセス',
+}
 
 export default function Access() {
     return (
