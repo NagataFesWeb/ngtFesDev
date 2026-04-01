@@ -16,6 +16,7 @@ import { useSession } from '@/contexts/SessionContext'
 import { toast } from 'sonner'
 import { ArrowLeft, Ticket } from 'lucide-react'
 import { useSystemSettings } from '@/hooks/useSystemSettings'
+import { getProjectTypeBadgeClassName, getProjectTypeLabel, normalizeEscapedNewlines } from '@/lib/projectDisplay'
 // import qrcode from 'qrcode.react' // Will add later
 
 type Project = Database['public']['Tables']['projects']['Row']
@@ -148,6 +149,9 @@ export default function ProjectDetailsPage() {
     if (loading) return <div className="flex justify-center p-12"><LoadingSpinner /></div>
     if (error || !project) return <div className="p-8"><ErrorMessage message={error || 'Project not found'} /></div>
 
+    const normalizedSchedule = normalizeEscapedNewlines(project.schedule) ?? ''
+    const normalizedDescription = normalizeEscapedNewlines(project.description) ?? ''
+
     return (
         <div className="container mx-auto px-4 md:px-6 py-8 max-w-3xl">
             <Button variant="ghost" className="mb-4 pl-0" onClick={() => router.back()}>
@@ -155,28 +159,23 @@ export default function ProjectDetailsPage() {
             </Button>
 
             <div className="space-y-6">
-                {project.image_url && (
+                {project.image_url ? (
                     <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted relative">
                         <Image src={project.image_url} alt={project.title} fill className="object-cover" />
+                    </div>
+                ) : (
+                    <div className="aspect-video w-full rounded-lg bg-muted border flex items-center justify-center text-muted-foreground flex-col gap-2">
+                        <span className="text-lg font-medium">Coming Soon...</span>
                     </div>
                 )}
 
                 <div>
                     <div className="flex items-center justify-between mb-2">
-                        <Badge variant="outline" className="text-sm font-medium px-3 py-1 bg-muted/50 border-none">
-                            {(() => {
-                                if (project.type === 'stage') {
-                                    if (project.location?.includes('講堂')) return '講堂ステージ'
-                                    if (project.location?.includes('野外')) return '野外ステージ'
-                                    return 'ステージ'
-                                }
-                                switch (project.type) {
-                                    case 'food': return '食品模擬'
-                                    case 'class': return '教室模擬'
-                                    case 'exhibition': return '展示'
-                                    default: return 'その他'
-                                }
-                            })()}
+                        <Badge
+                            variant="outline"
+                            className={`text-sm font-medium px-3 py-1 ${getProjectTypeBadgeClassName(project.type, project.location)}`}
+                        >
+                            {getProjectTypeLabel(project.type, project.location)}
                         </Badge>
                     </div>
                     <h1 className="text-3xl font-bold mb-1">{project.title}</h1>
@@ -193,7 +192,7 @@ export default function ProjectDetailsPage() {
                         {project.schedule && (
                             <div className="flex items-center gap-2">
                                 <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-bold">出演時間</span>
-                                <span className="text-foreground whitespace-pre-wrap">{project.schedule}</span>
+                                <span className="text-foreground whitespace-pre-wrap">{normalizedSchedule}</span>
                             </div>
                         )}
                     </div>
@@ -218,7 +217,7 @@ export default function ProjectDetailsPage() {
                 )}
 
                 <div className="prose max-w-none text-gray-700">
-                    <p className="whitespace-pre-wrap">{project.description}</p>
+                    <p className="whitespace-pre-wrap">{normalizedDescription}</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

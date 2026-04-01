@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { MapPin, Clock } from 'lucide-react'
 import { StatusIcon } from '@/components/common/StatusIcon'
 import { Database } from '@/types/database.types'
+import { getProjectTypeBadgeClassName, getProjectTypeLabel, getNormalizedProjectSchedule } from '@/lib/projectDisplay'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -18,15 +19,7 @@ interface BoothProjectCardProps {
 }
 
 export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideClassId = false }: BoothProjectCardProps) => {
-    const getTypeLabel = (type: string | null) => {
-        switch (type) {
-            case 'food': return '食品模擬'
-            case 'class': return '教室模擬'
-            case 'stage': return 'ステージ'
-            case 'exhibition': return '展示'
-            default: return 'その他'
-        }
-    }
+    const normalizedSchedule = getNormalizedProjectSchedule(project)
 
     return (
         <Link href={`/projects/${project.project_id}`}>
@@ -42,7 +35,9 @@ export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideC
                 )}
                 <CardHeader className="px-7 py-5 pb-2">
                     <div className="flex items-center justify-between mb-2">
-                        <Badge variant="outline">{getTypeLabel(project.type)}</Badge>
+                        <Badge variant="outline" className={getProjectTypeBadgeClassName(project.type, project.location)}>
+                            {getProjectTypeLabel(project.type, project.location)}
+                        </Badge>
                         <div className="flex gap-1">
                             {waitTime !== undefined && waitTime > 0 && (
                                 <Badge variant="destructive" className="text-xs">
@@ -69,7 +64,7 @@ export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideC
                             {project.schedule && (
                                 <div className="flex items-start gap-1.5 align-middle">
                                     <Clock className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
-                                    <span className="whitespace-pre-wrap">{project.schedule}</span>
+                                    <span className="whitespace-pre-wrap">{normalizedSchedule}</span>
                                 </div>
                             )}
                         </div>

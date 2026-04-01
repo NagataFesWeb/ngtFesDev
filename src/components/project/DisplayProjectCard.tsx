@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Clock } from 'lucide-react'
 import { Database } from '@/types/database.types'
+import { getProjectTypeBadgeClassName, getProjectTypeLabel, getNormalizedProjectSchedule } from '@/lib/projectDisplay'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -15,19 +16,7 @@ interface DisplayProjectCardProps {
 }
 
 export const DisplayProjectCard = ({ project, hideClassId = false }: DisplayProjectCardProps) => {
-    const getTypeLabel = (type: string | null, location: string | null) => {
-        if (type === 'stage') {
-            if (location?.includes('講堂')) return '講堂ステージ'
-            if (location?.includes('野外')) return '野外ステージ'
-            return 'ステージ'
-        }
-        switch (type) {
-            case 'food': return '食品模擬'
-            case 'class': return '教室模擬'
-            case 'exhibition': return '展示'
-            default: return 'その他'
-        }
-    }
+    const normalizedSchedule = getNormalizedProjectSchedule(project)
 
     return (
         <Link href={`/projects/${project.project_id}`}>
@@ -43,8 +32,8 @@ export const DisplayProjectCard = ({ project, hideClassId = false }: DisplayProj
                 )}
                 <CardHeader className="px-7 py-5 pb-2">
                     <div className="flex items-center justify-between mb-2">
-                        <Badge variant="secondary" className="bg-muted text-muted-foreground border-none">
-                            {getTypeLabel(project.type, project.location)}
+                        <Badge variant="outline" className={getProjectTypeBadgeClassName(project.type, project.location)}>
+                            {getProjectTypeLabel(project.type, project.location)}
                         </Badge>
                     </div>
                     <CardTitle className="line-clamp-1 text-lg font-bold">{project.title}</CardTitle>
@@ -62,7 +51,7 @@ export const DisplayProjectCard = ({ project, hideClassId = false }: DisplayProj
                             {project.schedule && (
                                 <div className="flex items-start gap-1.5 align-middle">
                                     <Clock className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
-                                    <span className="whitespace-pre-wrap leading-tight text-xs">{project.schedule}</span>
+                                    <span className="whitespace-pre-wrap leading-tight text-xs">{normalizedSchedule}</span>
                                 </div>
                             )}
                         </div>
