@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
-import { ProjectCard } from '@/components/project/ProjectCard'
+import { BoothProjectCard } from '@/components/project/BoothProjectCard'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
@@ -137,9 +137,9 @@ export const BoothClient = ({ initialProjects }: BoothClientProps) => {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredProjects.map((project) => (
-                                <ProjectCard
+                                <BoothProjectCard
                                     key={project.project_id}
-                                    project={project as unknown as React.ComponentProps<typeof ProjectCard>['project']}
+                                    project={project as unknown as React.ComponentProps<typeof BoothProjectCard>['project']}
                                     congestionLevel={congestionMap[project.project_id]}
                                     waitTime={project.wait_time_min}
                                 />
