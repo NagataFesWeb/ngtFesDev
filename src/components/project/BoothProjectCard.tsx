@@ -31,9 +31,13 @@ export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideC
     return (
         <Link href={`/projects/${project.project_id}`}>
             <Card className="h-full overflow-hidden transition-all hover:shadow-md hover:border-primary/50 flex flex-col bg-white py-0">
-                {project.image_url && (
+                {project.image_url ? (
                     <div className="aspect-[4/3] w-full overflow-hidden bg-muted relative">
                         <Image src={project.image_url} alt={project.title} fill className="object-cover transition-transform hover:scale-105" />
+                    </div>
+                ) : (
+                    <div className="aspect-[4/3] w-full bg-muted border-b flex items-center justify-center text-muted-foreground flex-col gap-2">
+                        <span className="text-lg font-medium">Coming Soon...</span>
                     </div>
                 )}
                 <CardHeader className="px-7 py-5 pb-2">
