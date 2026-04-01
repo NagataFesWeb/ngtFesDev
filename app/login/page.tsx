@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
@@ -91,10 +92,12 @@ export default function LoginPage() {
                 <CardContent>
                     <form onSubmit={handleAuth} className="space-y-4">
                         {isSignUp && (
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="nickname">ニックネーム</Label>
                                 <Input
+                                    id="nickname"
                                     type="text"
-                                    placeholder="ニックネーム (例: たろう)"
+                                    placeholder="例: たろう"
                                     value={nickname}
                                     onChange={(e) => setNickname(e.target.value)}
                                     maxLength={20}
@@ -104,24 +107,32 @@ export default function LoginPage() {
                                 </p>
                             </div>
                         )}
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="loginId">
+                                ログインID <span className="text-destructive">*</span>
+                            </Label>
                             <Input
+                                id="loginId"
                                 type="text"
-                                placeholder="ログインID (例: myname123)"
+                                placeholder="例: MyName123"
                                 value={loginId}
                                 onChange={(e) => setLoginId(e.target.value)}
                                 required
                             />
                             {isSignUp && (
                                 <p className="text-xs text-muted-foreground">
-                                    3文字以上。半角英字（大文字・小文字）、数字、アンダースコア（_）のみ
+                                    3文字以上。半角英字（**大文字も使用可能**）、数字、アンダースコア（_）のみ
                                 </p>
                             )}
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="password">
+                                パスワード <span className="text-destructive">*</span>
+                            </Label>
                             <Input
+                                id="password"
                                 type="password"
-                                placeholder="パスワード"
+                                placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
