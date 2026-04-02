@@ -30,7 +30,7 @@ export default function Home() {
               <div className="pt-8 md:pt-12">
                 <Link href="/booth">
                   <Button size="lg" className="h-12 px-8">
-                    ブースを探す <ArrowRight className="ml-2 h-4 w-4" />
+                    模擬店を探す <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
               </div>
