@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -13,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 
 type NewsItem = {
     news_id: string
+    title: string
     content: string
     is_important: boolean
     is_active: boolean
@@ -22,6 +24,7 @@ type NewsItem = {
 export function NewsManager() {
     const [newsList, setNewsList] = useState<NewsItem[]>([])
     const [loading, setLoading] = useState(false)
+    const [title, setTitle] = useState('')
     const [content, setContent] = useState('')
     const [isImportant, setIsImportant] = useState(false)
 
@@ -43,10 +46,11 @@ export function NewsManager() {
     }, [])
 
     const handleCreate = async () => {
-        if (!content.trim()) return
+        if (!title.trim() || !content.trim()) return
 
         const { error } = await supabase.from('news').insert({
-            content,
+            title: title.trim(),
+            content: content.trim(),
             is_important: isImportant,
             is_active: true
         })
@@ -55,6 +59,7 @@ export function NewsManager() {
             toast.error('作成失敗: ' + error.message)
         } else {
             toast.success('お知らせを作成しました')
+            setTitle('')
             setContent('')
             setIsImportant(false)
             fetchNews()
@@ -93,8 +98,19 @@ export function NewsManager() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label>内容</Label>
+                        <Label htmlFor="news-title">タイトル</Label>
+                        <Input
+                            id="news-title"
+                            placeholder="見出し（一覧・トップに表示）"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            maxLength={120}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="news-body">本文</Label>
                         <Textarea
+                            id="news-body"
                             placeholder="お知らせの内容を入力..."
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
@@ -107,7 +123,7 @@ export function NewsManager() {
                             <AlertCircle className="w-4 h-4 mr-1 text-red-500" /> 重要なお知らせとしてマーク
                         </Label>
                     </div>
-                    <Button onClick={handleCreate} disabled={!content.trim() || loading} className="w-full">
+                    <Button onClick={handleCreate} disabled={!title.trim() || !content.trim() || loading} className="w-full">
                         投稿する
                     </Button>
                 </CardContent>
@@ -128,7 +144,8 @@ export function NewsManager() {
                                         {item.is_important && <Badge variant="destructive" className="text-xs">重要</Badge>}
                                         {!item.is_active && <Badge variant="secondary" className="text-xs">非公開</Badge>}
                                     </div>
-                                    <p className="text-sm whitespace-pre-wrap">{item.content}</p>
+                                    <p className="text-sm font-medium">{item.title || '（無題）'}</p>
+                                    <p className="text-sm whitespace-pre-wrap text-muted-foreground">{item.content}</p>
                                 </div>
                                 <div className="flex flex-col gap-2">
                                     <div className="flex items-center space-x-2">

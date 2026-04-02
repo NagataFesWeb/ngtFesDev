@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
@@ -16,17 +16,27 @@ import { useSession } from '@/contexts/SessionContext'
 import { toast } from 'sonner'
 import { ArrowLeft, Ticket } from 'lucide-react'
 import { useSystemSettings } from '@/hooks/useSystemSettings'
+import { useFastpassSalesStatus } from '@/hooks/useFastpassSalesStatus'
 import { getProjectTypeBadgeClassName, getProjectTypeLabel, normalizeEscapedNewlines } from '@/lib/projectDisplay'
-// import qrcode from 'qrcode.react' // Will add later
+import {
+    festivalDayLabel,
+    isFastpassSlotIssuanceClosed,
+    type FestivalDay,
+} from '@/lib/fastpass'
 
 type Project = Database['public']['Tables']['projects']['Row']
 type FastPassSlot = Database['public']['Tables']['fastpass_slots']['Row']
+
+function slotsForDay(slots: FastPassSlot[], day: FestivalDay) {
+    return slots.filter((s) => s.festival_day === day).sort((a, b) => a.start_time.localeCompare(b.start_time))
+}
 
 export default function ProjectDetailsPage() {
     const { id } = useParams()
     const router = useRouter()
     const { session } = useSession()
     const { settings: systemSettings } = useSystemSettings()
+    const { status: salesStatus, loading: salesLoading } = useFastpassSalesStatus()
 
     const [project, setProject] = useState<Project | null>(null)
     const [congestionLevel, setCongestionLevel] = useState<number>(1)
@@ -38,13 +48,11 @@ export default function ProjectDetailsPage() {
     const [isIssuing, setIsIssuing] = useState(false)
     const [isFastPassModalOpen, setIsFastPassModalOpen] = useState(false)
 
-    // Fetch data
     useEffect(() => {
         const fetchData = async () => {
             if (!id) return
 
             try {
-                // Fetch Project
                 const { data: projectData, error: projectError } = await supabase
                     .from('projects')
                     .select('*')
@@ -54,7 +62,6 @@ export default function ProjectDetailsPage() {
                 if (projectError) throw projectError
                 setProject(projectData as Project)
 
-                // Fetch Congestion
                 const { data: congestionData } = await supabase
                     .from('congestion')
                     .select('level')
@@ -63,13 +70,11 @@ export default function ProjectDetailsPage() {
 
                 if (congestionData) setCongestionLevel((congestionData as { level: number }).level)
 
-                // Fetch Estimated Wait Time
                 const { data: waitTimeData } = await supabase.rpc('get_estimated_wait_time', {
-                    p_project_id: id as string
+                    p_project_id: id as string,
                 })
                 if (waitTimeData !== null) setWaitTime(waitTimeData)
 
-                // Fetch Slots if enabled
                 if ((projectData as Project)?.fastpass_enabled) {
                     const { data: slotsData } = await supabase
                         .from('fastpass_slots')
@@ -78,7 +83,6 @@ export default function ProjectDetailsPage() {
                         .order('start_time', { ascending: true })
                     setSlots(slotsData || [])
                 }
-
             } catch (err: unknown) {
                 setError(err instanceof Error ? err.message : String(err))
             } finally {
@@ -88,7 +92,6 @@ export default function ProjectDetailsPage() {
 
         fetchData()
 
-        // Realtime subscription for congestion
         const channel = supabase
             .channel(`project:${id}`)
             .on(
@@ -112,7 +115,36 @@ export default function ProjectDetailsPage() {
         }
     }, [id])
 
-    // Actions
+    const bookableSlots = useMemo(() => {
+        return slots.filter((s) => {
+            const saleOk = s.festival_day === 'school' ? salesStatus.school_open : salesStatus.public_open
+            if (!saleOk) return false
+            if (isFastpassSlotIssuanceClosed(s.end_time)) return false
+            return true
+        })
+    }, [slots, salesStatus])
+
+    const dialogMessage = useMemo(() => {
+        if (slots.length === 0) {
+            return { kind: 'empty' as const, text: '現在配布中の整理券はありません。' }
+        }
+        const anySaleForProject = slots.some(
+            (s) => (s.festival_day === 'school' && salesStatus.school_open) || (s.festival_day === 'public' && salesStatus.public_open)
+        )
+        if (!anySaleForProject) {
+            return {
+                kind: 'presale' as const,
+                text: 'ファストパス販売開始前です。開始後にこちらから時間枠を選んで取得できます。',
+            }
+        }
+        if (bookableSlots.length === 0) {
+            return {
+                kind: 'expired' as const,
+                text: '現在、予約可能な時間枠はありません（すべて終了しているか、枠が設定されていません）。',
+            }
+        }
+        return null
+    }, [slots, salesStatus, bookableSlots.length])
 
     const handleIssueFastPass = async (slotId: string) => {
         if (!session) {
@@ -123,23 +155,26 @@ export default function ProjectDetailsPage() {
         setIsIssuing(true)
         try {
             const { data, error } = await supabase.rpc('issue_fastpass_ticket', {
-                p_slot_id: slotId
+                p_slot_id: slotId,
             })
 
             if (error) throw error
 
-            // Check custom error response if JSON
-            if (data && typeof data === 'object' && 'code' in data) {
-                // @ts-expect-error: Property 'status' / 'code' exists based on the assumption below
-                if (data.status >= 400) throw new Error(data.code || 'Error')
+            if (data && typeof data === 'object' && 'status' in data) {
+                const d = data as { status: string | number; code?: string }
+                if (typeof d.status === 'number' && d.status >= 400) {
+                    throw new Error(d.code || 'Error')
+                }
             }
 
             toast.success('整理券を発券しました！マイページを確認してください。')
             setIsFastPassModalOpen(false)
         } catch (err: unknown) {
             let msg = err instanceof Error ? err.message : String(err)
-            if (msg === 'ALREADY_HAS_TICKET') msg = 'すでに有効な整理券を持っています'
+            if (msg === 'ALREADY_HAS_TICKET') msg = 'すでに同一祭日で有効な整理券を持っています'
             if (msg === 'SLOT_FULL') msg = 'この枠は満席です'
+            if (msg === 'SLOT_EXPIRED') msg = 'この時間枠は発券できません（枠の終了時刻を過ぎています）'
+            if (msg === 'SALES_NOT_STARTED') msg = 'この祭日のファストパス販売はまだ開始されていません'
             toast.error('発券できませんでした: ' + msg)
         } finally {
             setIsIssuing(false)
@@ -151,6 +186,9 @@ export default function ProjectDetailsPage() {
 
     const normalizedSchedule = normalizeEscapedNewlines(project.schedule) ?? ''
     const normalizedDescription = normalizeEscapedNewlines(project.description) ?? ''
+
+    const schoolBookable = slotsForDay(bookableSlots, 'school')
+    const publicBookable = slotsForDay(bookableSlots, 'public')
 
     return (
         <div className="container mx-auto px-4 md:px-6 py-8 max-w-3xl">
@@ -221,7 +259,6 @@ export default function ProjectDetailsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
                     {systemSettings.fastpass_enabled && project.fastpass_enabled && (
                         <Dialog open={isFastPassModalOpen} onOpenChange={setIsFastPassModalOpen}>
                             <DialogTrigger asChild>
@@ -229,32 +266,89 @@ export default function ProjectDetailsPage() {
                                     <Ticket className="mr-2 h-5 w-5" /> 整理券を取得
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="max-h-[85vh] overflow-y-auto">
                                 <DialogHeader>
                                     <DialogTitle>時間枠を選択してください</DialogTitle>
                                 </DialogHeader>
-                                <div className="space-y-3 mt-4">
-                                    {slots.length === 0 ? (
-                                        <p className="text-center text-muted-foreground py-4">現在配布中の整理券はありません。</p>
-                                    ) : (
-                                        slots.map(slot => (
-                                            <Button
-                                                key={slot.slot_id}
-                                                variant="outline"
-                                                className="w-full justify-between h-auto py-3"
-                                                onClick={() => handleIssueFastPass(slot.slot_id)}
-                                                disabled={isIssuing || (slot.capacity !== null && slot.capacity <= 0)} // Note: client logic needs real count if capacity is dynamic
-                                            >
-                                                <span>
-                                                    {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    -
-                                                    {new Date(slot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                                {/* Ideally show capacity count */}
-                                            </Button>
-                                        ))
-                                    )}
-                                </div>
+                                {salesLoading ? (
+                                    <div className="flex justify-center py-8"><LoadingSpinner /></div>
+                                ) : dialogMessage ? (
+                                    <div className="space-y-3 mt-4">
+                                        <p className="text-sm text-muted-foreground leading-relaxed">{dialogMessage.text}</p>
+                                        {dialogMessage.kind === 'presale' && (
+                                            <p className="text-xs text-muted-foreground">
+                                                模擬店一覧などでは「FP対象」と表示されている店舗がファストパス対象です。
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6 mt-4">
+                                        {schoolBookable.length > 0 && (
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-semibold text-foreground">{festivalDayLabel('school')}</p>
+                                                <div className="space-y-2">
+                                                    {schoolBookable.map((slot) => (
+                                                        <Button
+                                                            key={slot.slot_id}
+                                                            variant="outline"
+                                                            className="w-full justify-between h-auto py-3"
+                                                            onClick={() => handleIssueFastPass(slot.slot_id)}
+                                                            disabled={isIssuing || (slot.capacity !== null && slot.capacity <= 0)}
+                                                        >
+                                                            <span>
+                                                                {new Date(slot.start_time).toLocaleString('ja-JP', {
+                                                                    month: 'numeric',
+                                                                    day: 'numeric',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                })}
+                                                                {' '}
+                                                                -
+                                                                {new Date(slot.end_time).toLocaleTimeString('ja-JP', {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                })}
+                                                            </span>
+                                                            <Badge variant="secondary" className="shrink-0">校内祭</Badge>
+                                                        </Button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {publicBookable.length > 0 && (
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-semibold text-foreground">{festivalDayLabel('public')}</p>
+                                                <div className="space-y-2">
+                                                    {publicBookable.map((slot) => (
+                                                        <Button
+                                                            key={slot.slot_id}
+                                                            variant="outline"
+                                                            className="w-full justify-between h-auto py-3"
+                                                            onClick={() => handleIssueFastPass(slot.slot_id)}
+                                                            disabled={isIssuing || (slot.capacity !== null && slot.capacity <= 0)}
+                                                        >
+                                                            <span>
+                                                                {new Date(slot.start_time).toLocaleString('ja-JP', {
+                                                                    month: 'numeric',
+                                                                    day: 'numeric',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                })}
+                                                                {' '}
+                                                                -
+                                                                {new Date(slot.end_time).toLocaleTimeString('ja-JP', {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                })}
+                                                            </span>
+                                                            <Badge variant="secondary" className="shrink-0">一般祭</Badge>
+                                                        </Button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </DialogContent>
                         </Dialog>
                     )}

@@ -24,6 +24,8 @@
 --   20260305234800_add_quiz_rewards.sql
 --   20260306214500_add_operator_edit_setting.sql
 --   20260306214700_remove_voting_setting.sql
+--   20260402120000_fastpass_festival_news_sales.sql
+--   20260403120000_fastpass_expiry_at_end_time.sql
 --
 -- ※ 投票機能（votes テーブル、cast_vote、admin_get_vote_summary 等）は
 --    完全に除外されています。
@@ -109,8 +111,11 @@ CREATE TABLE IF NOT EXISTS public.fastpass_slots (
     project_id UUID REFERENCES public.projects(project_id) ON DELETE CASCADE,
     start_time TIMESTAMPTZ NOT NULL,
     end_time TIMESTAMPTZ NOT NULL,
-    capacity INTEGER DEFAULT 0 CHECK (capacity >= 0)
+    capacity INTEGER DEFAULT 0 CHECK (capacity >= 0),
+    festival_day TEXT NOT NULL DEFAULT 'school' CHECK (festival_day IN ('school', 'public'))
 );
+
+COMMENT ON COLUMN public.fastpass_slots.festival_day IS 'school=校内祭日, public=一般祭日';
 
 -- 2.6 fastpass_tickets（ファストパスチケット）
 CREATE TABLE IF NOT EXISTS public.fastpass_tickets (
@@ -170,6 +175,7 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
 -- 2.12 news（お知らせ）
 CREATE TABLE IF NOT EXISTS public.news (
     news_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL DEFAULT '',
     content TEXT NOT NULL,
     is_important BOOLEAN DEFAULT false,
     is_active BOOLEAN DEFAULT true,
@@ -390,11 +396,105 @@ $$;
 -- SECTION 6: RPC 関数（ファストパス系）
 -- =============================================================================
 
--- 6.1 ファストパスチケット発行（機能トグル対応済み）
+-- 6.0 祭日ごとの販売オープン判定（内部用）
+CREATE OR REPLACE FUNCTION public._fastpass_sales_open_for_day(p_day TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_key_t TEXT;
+    v_key_at TEXT;
+    v_toggle JSONB;
+    v_at JSONB;
+    v_toggle_on BOOLEAN := false;
+    v_scheduled_ok BOOLEAN := false;
+BEGIN
+    IF p_day = 'school' THEN
+        v_key_t := 'fastpass_sale_school_toggle';
+        v_key_at := 'fastpass_sale_school_opens_at';
+    ELSIF p_day = 'public' THEN
+        v_key_t := 'fastpass_sale_public_toggle';
+        v_key_at := 'fastpass_sale_public_opens_at';
+    ELSE
+        RETURN false;
+    END IF;
+
+    SELECT value INTO v_toggle FROM public.system_settings WHERE key = v_key_t;
+    v_toggle_on := COALESCE(v_toggle = 'true'::jsonb, false);
+
+    SELECT value INTO v_at FROM public.system_settings WHERE key = v_key_at;
+    IF v_at IS NULL OR jsonb_typeof(v_at) = 'null' THEN
+        v_scheduled_ok := false;
+    ELSIF jsonb_typeof(v_at) = 'string' THEN
+        v_scheduled_ok := (now() >= (v_at #>> '{}')::timestamptz);
+    ELSE
+        v_scheduled_ok := false;
+    END IF;
+
+    RETURN v_toggle_on OR v_scheduled_ok;
+END;
+$$;
+
+-- 6.0b 販売状態（フロント用）
+CREATE OR REPLACE FUNCTION public.get_fastpass_sales_status()
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT jsonb_build_object(
+        'school_open', public._fastpass_sales_open_for_day('school'),
+        'public_open', public._fastpass_sales_open_for_day('public')
+    );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_fastpass_sales_status() TO anon, authenticated;
+
+-- 6.0c 期限切れチケットの破棄
+CREATE OR REPLACE FUNCTION public.discard_expired_fastpass_ticket(p_ticket_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
+    v_deleted INT;
+BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Not authenticated';
+    END IF;
+
+    DELETE FROM public.fastpass_tickets t
+    USING public.fastpass_slots s
+    WHERE t.ticket_id = p_ticket_id
+      AND t.slot_id = s.slot_id
+      AND t.user_id = v_user_id
+      AND t.used = false
+      AND now() > s.end_time;
+
+    GET DIAGNOSTICS v_deleted = ROW_COUNT;
+
+    IF v_deleted = 0 THEN
+        RETURN jsonb_build_object('status', 400, 'code', 'CANNOT_DISCARD');
+    END IF;
+
+    RETURN jsonb_build_object('status', 'success');
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.discard_expired_fastpass_ticket(UUID) TO authenticated;
+
+-- 6.1 ファストパスチケット発行（機能トグル・販売開始・有効期限・祭日ごと1枚）
 CREATE OR REPLACE FUNCTION public.issue_fastpass_ticket(p_slot_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     v_user_id UUID;
@@ -402,13 +502,17 @@ DECLARE
     v_count INTEGER;
     v_ticket_id UUID;
     v_enabled BOOLEAN;
+    v_festival_day TEXT;
+    v_end_time TIMESTAMPTZ;
+    v_project_fp BOOLEAN;
+    v_sale_open BOOLEAN;
 BEGIN
-    -- 機能トグルチェック
-    SELECT (value::text = 'true') INTO v_enabled
+    SELECT COALESCE((value = 'true'::jsonb), false)
+    INTO v_enabled
     FROM public.system_settings
     WHERE key = 'fastpass_enabled';
 
-    IF v_enabled IS FALSE THEN
+    IF NOT FOUND OR v_enabled IS NOT TRUE THEN
         RETURN jsonb_build_object('status', 403, 'message', 'FastPass issuance is currently disabled');
     END IF;
 
@@ -417,24 +521,50 @@ BEGIN
         RAISE EXCEPTION 'Not authenticated';
     END IF;
 
-    -- 既存の未使用チケット確認
-    PERFORM 1 FROM public.fastpass_tickets
-    WHERE user_id = v_user_id AND used = false
-    FOR UPDATE;
+    SELECT s.festival_day, s.end_time, COALESCE(p.fastpass_enabled, false)
+    INTO v_festival_day, v_end_time, v_project_fp
+    FROM public.fastpass_slots s
+    JOIN public.projects p ON p.project_id = s.project_id
+    WHERE s.slot_id = p_slot_id
+    FOR UPDATE OF s;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('status', 404, 'code', 'SLOT_NOT_FOUND');
+    END IF;
+
+    IF NOT v_project_fp THEN
+        RETURN jsonb_build_object('status', 403, 'code', 'PROJECT_FP_DISABLED');
+    END IF;
+
+    IF now() > v_end_time THEN
+        RETURN jsonb_build_object('status', 409, 'code', 'SLOT_EXPIRED');
+    END IF;
+
+    v_sale_open := public._fastpass_sales_open_for_day(v_festival_day);
+    IF NOT v_sale_open THEN
+        RETURN jsonb_build_object('status', 403, 'code', 'SALES_NOT_STARTED');
+    END IF;
+
+    PERFORM 1
+    FROM public.fastpass_tickets t
+    JOIN public.fastpass_slots s ON s.slot_id = t.slot_id
+    WHERE t.user_id = v_user_id
+      AND t.used = false
+      AND s.festival_day = v_festival_day
+      AND now() <= s.end_time
+    FOR UPDATE OF t;
 
     IF FOUND THEN
         RETURN jsonb_build_object('status', 409, 'code', 'ALREADY_HAS_TICKET');
     END IF;
 
-    -- 枠の残量確認
     SELECT capacity INTO v_capacity FROM public.fastpass_slots WHERE slot_id = p_slot_id FOR UPDATE;
-    SELECT count(*) INTO v_count FROM public.fastpass_tickets WHERE slot_id = p_slot_id;
+    SELECT count(*)::int INTO v_count FROM public.fastpass_tickets WHERE slot_id = p_slot_id;
 
     IF v_count >= v_capacity THEN
         RETURN jsonb_build_object('status', 409, 'code', 'SLOT_FULL');
     END IF;
 
-    -- チケット発行
     INSERT INTO public.fastpass_tickets (slot_id, user_id, qr_token)
     VALUES (p_slot_id, v_user_id, gen_random_uuid()::text)
     RETURNING ticket_id INTO v_ticket_id;
@@ -448,19 +578,18 @@ CREATE OR REPLACE FUNCTION public.verify_and_use_ticket(p_qr_token TEXT, p_opera
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     v_class_id TEXT;
     v_ticket RECORD;
 BEGIN
-    -- オペレーター認証
     v_class_id := p_operator_token;
     PERFORM 1 FROM public.classes WHERE class_id = v_class_id;
     IF NOT FOUND THEN
         RETURN jsonb_build_object('status', 401, 'message', 'Invalid operator');
     END IF;
 
-    -- チケット検索
     SELECT t.*, s.start_time, s.end_time, p.title, p.class_id AS project_class_id
     INTO v_ticket
     FROM public.fastpass_tickets t
@@ -468,20 +597,22 @@ BEGIN
     JOIN public.projects p ON s.project_id = p.project_id
     WHERE t.qr_token = p_qr_token;
 
-    IF v_ticket IS NULL THEN
-         RETURN jsonb_build_object('status', 404, 'message', 'Ticket not found');
+    IF v_ticket.ticket_id IS NULL THEN
+        RETURN jsonb_build_object('status', 404, 'message', 'Ticket not found');
     END IF;
 
     IF v_ticket.used THEN
         RETURN jsonb_build_object('status', 400, 'code', 'ALREADY_USED');
     END IF;
 
-    -- クラス一致確認
+    IF now() > v_ticket.end_time THEN
+        RETURN jsonb_build_object('status', 400, 'code', 'SLOT_EXPIRED');
+    END IF;
+
     IF v_ticket.project_class_id != v_class_id THEN
         RETURN jsonb_build_object('status', 403, 'message', 'Class mismatch');
     END IF;
 
-    -- 使用済みにマーク
     UPDATE public.fastpass_tickets SET used = true WHERE ticket_id = v_ticket.ticket_id;
 
     RETURN jsonb_build_object('status', 'ok', 'project_title', v_ticket.title);
@@ -856,17 +987,28 @@ CREATE OR REPLACE FUNCTION public.admin_update_setting(p_key TEXT, p_value JSONB
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
+DECLARE
+    v_value JSONB;
 BEGIN
     IF NOT public.is_admin() THEN
         RETURN jsonb_build_object('status', 403, 'message', 'Forbidden');
     END IF;
 
+    IF p_key IN ('fastpass_sale_school_opens_at', 'fastpass_sale_public_opens_at') AND p_value IS NULL THEN
+        v_value := 'null'::jsonb;
+    ELSIF p_value IS NULL THEN
+        RETURN jsonb_build_object('status', 400, 'message', 'value is required');
+    ELSE
+        v_value := p_value;
+    END IF;
+
     UPDATE public.system_settings
-    SET value = p_value, updated_at = NOW()
+    SET value = v_value, updated_at = NOW()
     WHERE key = p_key;
 
-    RETURN jsonb_build_object('status', 'success', 'key', p_key, 'value', p_value);
+    RETURN jsonb_build_object('status', 'success', 'key', p_key, 'value', v_value);
 END;
 $$;
 
@@ -902,20 +1044,23 @@ RETURNS TABLE (
     start_time TIMESTAMPTZ,
     end_time TIMESTAMPTZ,
     capacity INTEGER,
-    issued_count INTEGER
+    issued_count INTEGER,
+    festival_day TEXT
 )
 LANGUAGE sql
 SECURITY DEFINER
+SET search_path = public
 AS $$
     SELECT
         s.slot_id,
         s.start_time,
         s.end_time,
         s.capacity,
-        (SELECT count(*)::int FROM public.fastpass_tickets t WHERE t.slot_id = s.slot_id) as issued_count
+        (SELECT count(*)::int FROM public.fastpass_tickets t WHERE t.slot_id = s.slot_id) AS issued_count,
+        s.festival_day
     FROM public.fastpass_slots s
     WHERE s.project_id = p_project_id
-    ORDER BY s.start_time;
+    ORDER BY s.festival_day, s.start_time;
 $$;
 
 -- 9.7 管理者：スロット容量更新
@@ -1024,7 +1169,11 @@ END $$;
 INSERT INTO public.system_settings (key, value, description) VALUES
 ('quiz_enabled',          'true'::jsonb, 'Enable or disable quiz feature'),
 ('fastpass_enabled',      'true'::jsonb, 'Enable or disable fastpass issuance'),
-('operator_edit_enabled', 'true'::jsonb, '運営者による企画情報（説明文・画像）の編集を許可する')
+('operator_edit_enabled', 'true'::jsonb, '運営者による企画情報（説明文・画像）の編集を許可する'),
+('fastpass_sale_school_toggle', 'false'::jsonb, '校内祭ファストパス販売を即時オープン（開始日時と併用可）'),
+('fastpass_sale_school_opens_at', 'null'::jsonb, '校内祭ファストパス販売開始の日時（JSON 文字列の ISO8601、null で未設定）'),
+('fastpass_sale_public_toggle', 'false'::jsonb, '一般祭ファストパス販売を即時オープン（開始日時と併用可）'),
+('fastpass_sale_public_opens_at', 'null'::jsonb, '一般祭ファストパス販売開始の日時（JSON 文字列の ISO8601、null で未設定）')
 ON CONFLICT (key) DO NOTHING;
 
 -- 11.2 クラスデータ（2年・3年）
@@ -1149,53 +1298,31 @@ ON CONFLICT (required_score) DO UPDATE SET
     title_name = EXCLUDED.title_name;
 
 
--- 11.6 ファストパルスロットの自動生成 (from seed_slots.sql)
+-- 11.6 ファストパス枠（校内祭 2026-05-08 / 一般祭 2026-05-09）
 DO $$
 DECLARE
     r_project RECORD;
-    v_today DATE := CURRENT_DATE;
+    v_school DATE := DATE '2026-05-08';
+    v_public DATE := DATE '2026-05-09';
 BEGIN
-    -- Iterate over projects with FastPass enabled
     FOR r_project IN SELECT project_id, title FROM public.projects WHERE fastpass_enabled = true LOOP
-        
         RAISE NOTICE 'Seeding slots for: %', r_project.title;
 
-        -- Create slots for 10:00 - 11:00 (Capacity 20)
-        INSERT INTO public.fastpass_slots (project_id, start_time, end_time, capacity)
-        VALUES (
-            r_project.project_id,
-            (v_today || ' 10:00:00+09')::TIMESTAMP WITH TIME ZONE,
-            (v_today || ' 11:00:00+09')::TIMESTAMP WITH TIME ZONE,
-            20
-        ) ON CONFLICT DO NOTHING;
+        -- 校内祭 9:30–15:00 相当の代表枠
+        INSERT INTO public.fastpass_slots (project_id, start_time, end_time, capacity, festival_day)
+        VALUES
+            (r_project.project_id, (v_school || ' 09:30:00+09')::timestamptz, (v_school || ' 11:00:00+09')::timestamptz, 20, 'school'),
+            (r_project.project_id, (v_school || ' 11:00:00+09')::timestamptz, (v_school || ' 12:00:00+09')::timestamptz, 20, 'school'),
+            (r_project.project_id, (v_school || ' 13:00:00+09')::timestamptz, (v_school || ' 14:00:00+09')::timestamptz, 20, 'school'),
+            (r_project.project_id, (v_school || ' 14:00:00+09')::timestamptz, (v_school || ' 15:00:00+09')::timestamptz, 20, 'school');
 
-        -- Create slots for 11:00 - 12:00 (Capacity 20)
-        INSERT INTO public.fastpass_slots (project_id, start_time, end_time, capacity)
-        VALUES (
-            r_project.project_id,
-            (v_today || ' 11:00:00+09')::TIMESTAMP WITH TIME ZONE,
-            (v_today || ' 12:00:00+09')::TIMESTAMP WITH TIME ZONE,
-            20
-        ) ON CONFLICT DO NOTHING;
-
-        -- Create slots for 13:00 - 14:00 (Capacity 20)
-        INSERT INTO public.fastpass_slots (project_id, start_time, end_time, capacity)
-        VALUES (
-            r_project.project_id,
-            (v_today || ' 13:00:00+09')::TIMESTAMP WITH TIME ZONE,
-            (v_today || ' 14:00:00+09')::TIMESTAMP WITH TIME ZONE,
-            20
-        ) ON CONFLICT DO NOTHING;
-
-        -- Create slots for 14:00 - 15:00 (Capacity 20)
-        INSERT INTO public.fastpass_slots (project_id, start_time, end_time, capacity)
-        VALUES (
-            r_project.project_id,
-            (v_today || ' 14:00:00+09')::TIMESTAMP WITH TIME ZONE,
-            (v_today || ' 15:00:00+09')::TIMESTAMP WITH TIME ZONE,
-            20
-        ) ON CONFLICT DO NOTHING;
-        
+        -- 一般祭 9:00–15:00 相当の代表枠
+        INSERT INTO public.fastpass_slots (project_id, start_time, end_time, capacity, festival_day)
+        VALUES
+            (r_project.project_id, (v_public || ' 09:00:00+09')::timestamptz, (v_public || ' 11:00:00+09')::timestamptz, 20, 'public'),
+            (r_project.project_id, (v_public || ' 11:00:00+09')::timestamptz, (v_public || ' 12:00:00+09')::timestamptz, 20, 'public'),
+            (r_project.project_id, (v_public || ' 13:00:00+09')::timestamptz, (v_public || ' 14:00:00+09')::timestamptz, 20, 'public'),
+            (r_project.project_id, (v_public || ' 14:00:00+09')::timestamptz, (v_public || ' 15:00:00+09')::timestamptz, 20, 'public');
     END LOOP;
 END $$;
 
