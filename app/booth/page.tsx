@@ -14,13 +14,22 @@ export const revalidate = 60
 export default async function BoothPage() {
     const [
         { data: projectsWithStatus, error },
-        { data: fpSetting }
+        { data: fpSetting },
+        { data: congestionData }
     ] = await Promise.all([
         supabase.rpc('get_projects_with_status'),
-        supabase.from('system_settings').select('value').eq('key', 'fastpass_enabled').single()
+        supabase.from('system_settings').select('value').eq('key', 'fastpass_enabled').single(),
+        supabase.from('congestion').select('project_id, updated_at')
     ])
 
     const globalFastpassEnabled = fpSetting?.value === true || fpSetting?.value === 'true'
+    
+    const initialUpdatedAtMap: Record<string, string> = {}
+    if (congestionData) {
+        congestionData.forEach(c => {
+            if (c.updated_at) initialUpdatedAtMap[c.project_id] = c.updated_at
+        })
+    }
 
     if (error) {
         console.error('Error fetching projects:', error)
@@ -32,7 +41,11 @@ export default async function BoothPage() {
 
     return (
         <div className="flex flex-col">
-            <BoothClient initialProjects={boothProjects} globalFastpassEnabled={globalFastpassEnabled} />
+            <BoothClient 
+                initialProjects={boothProjects} 
+                globalFastpassEnabled={globalFastpassEnabled} 
+                initialUpdatedAtMap={initialUpdatedAtMap}
+            />
             <CautionNotes />
             <PaymentNotes />
         </div>

@@ -14,9 +14,10 @@ import { Label } from '@/components/ui/label'
 interface BoothClientProps {
     initialProjects: ProjectWithStatus[]
     globalFastpassEnabled?: boolean
+    initialUpdatedAtMap?: Record<string, string>
 }
 
-export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: BoothClientProps) => {
+export const BoothClient = ({ initialProjects, globalFastpassEnabled = true, initialUpdatedAtMap = {} }: BoothClientProps) => {
     const [projects] = useState<ProjectWithStatus[]>(initialProjects)
     const [congestionMap, setCongestionMap] = useState<Record<string, number>>(() => {
         const map: Record<string, number> = {}
@@ -25,6 +26,8 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: B
         })
         return map
     })
+    
+    const [updatedAtMap, setUpdatedAtMap] = useState<Record<string, string>>(initialUpdatedAtMap)
 
     const [searchTerm, setSearchTerm] = useState('')
     const [activeTab, setActiveTab] = useState('all')
@@ -61,8 +64,12 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: B
                 },
                 (payload) => {
                     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-                        const newRecord = payload.new as { project_id: string; level: number }
+                        const newRecord = payload.new as { project_id: string; level: number; updated_at?: string }
                         setCongestionMap(prev => ({ ...prev, [newRecord.project_id]: newRecord.level }))
+                        setUpdatedAtMap(prev => ({ 
+                            ...prev, 
+                            [newRecord.project_id]: newRecord.updated_at || new Date().toISOString() 
+                        }))
                     }
                 }
             )
@@ -156,6 +163,7 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: B
                                     congestionLevel={congestionMap[project.project_id]}
                                     waitTime={project.wait_time_min}
                                     globalFastpassEnabled={globalFastpassEnabled}
+                                    updatedAt={updatedAtMap[project.project_id]}
                                 />
                             ))}
                         </div>

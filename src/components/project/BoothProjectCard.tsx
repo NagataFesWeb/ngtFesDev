@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,10 +18,25 @@ interface BoothProjectCardProps {
     waitTime?: number 
     hideClassId?: boolean
     globalFastpassEnabled?: boolean
+    updatedAt?: string
 }
 
-export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideClassId = false, globalFastpassEnabled = true }: BoothProjectCardProps) => {
+export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideClassId = false, globalFastpassEnabled = true, updatedAt }: BoothProjectCardProps) => {
     const normalizedSchedule = getNormalizedProjectSchedule(project)
+    
+    const [now, setNow] = useState(Date.now())
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 60000) // Update every minute
+        return () => clearInterval(timer)
+    }, [])
+    
+    let timeAgoText = null;
+    if (updatedAt) {
+        const diffMins = Math.floor((now - new Date(updatedAt).getTime()) / 60000)
+        if (diffMins < 1) timeAgoText = 'たった今更新'
+        else if (diffMins >= 1440) timeAgoText = '1日以上前更新'
+        else timeAgoText = `${diffMins}分前更新`
+    }
 
     return (
         <Link href={`/projects/${project.project_id}`}>
@@ -74,8 +90,11 @@ export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideC
                         {project.description || '説明文がありません'}
                     </p>
                 </CardContent>
-                <CardFooter className="px-7 py-6 mt-auto flex items-center justify-between border-t bg-logo-background">
-                    <span className="inline-flex h-6 items-center text-xs leading-none text-muted-foreground font-medium">混雑状況</span>
+                <CardFooter className="px-7 py-4 mt-auto flex items-center justify-between border-t bg-logo-background/50">
+                    <div className="flex flex-col">
+                        <span className="inline-flex h-6 items-center text-xs leading-none text-muted-foreground font-medium">混雑状況</span>
+                        {timeAgoText && <span className="text-[10px] text-muted-foreground/80 mt-0.5">{timeAgoText}</span>}
+                    </div>
                     <StatusIcon level={congestionLevel} showLabel className="h-6 items-center" />
                 </CardFooter>
             </Card>
