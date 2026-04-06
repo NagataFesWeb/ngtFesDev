@@ -8,6 +8,7 @@ import { AlertCircle } from 'lucide-react'
 
 type NewsItem = {
     news_id: string
+    title: string
     content: string
     is_important: boolean
     is_active: boolean
@@ -80,6 +81,9 @@ export function NewsList() {
                             </Badge>
                         )}
                     </div>
+                    <h3 className={`text-base md:text-lg font-semibold mb-1.5 ${item.is_important ? 'text-foreground' : 'text-foreground'}`}>
+                        {item.title?.trim() ? item.title : 'お知らせ'}
+                    </h3>
                     <p className={`text-sm md:text-base leading-relaxed whitespace-pre-wrap ${item.is_important ? 'font-medium text-foreground' : 'text-gray-700'}`}>
                         {item.content}
                     </p>

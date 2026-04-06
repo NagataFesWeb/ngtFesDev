@@ -86,7 +86,9 @@ export default function LoginPage() {
                 <CardHeader>
                     <CardTitle>{isSignUp ? 'アカウント登録' : 'ログイン'}</CardTitle>
                     <CardDescription>
-                        {isSignUp ? '希望するログインIDとパスワードを入力してください' : '登録済みのログインIDでログインしてください'}
+                        {isSignUp
+                            ? '希望するログインID・パスワード・ニックネームを入力してください。'
+                            : '登録済みのログインIDでログインしてください'}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -102,8 +104,8 @@ export default function LoginPage() {
                                     onChange={(e) => setNickname(e.target.value)}
                                     maxLength={20}
                                 />
-                                <p className="text-xs text-muted-foreground">
-                                    1〜20文字。日本語・英数字・記号が使えます（空欄の場合「Guest」になります）
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    長田検定（クイズ）のランキングに表示されるユーザーネームとして使われます。1〜20文字。日本語・英数字・記号が使えます（空欄の場合「Guest」になります）。
                                 </p>
                             </div>
                         )}
@@ -120,8 +122,8 @@ export default function LoginPage() {
                                 required
                             />
                             {isSignUp && (
-                                <p className="text-xs text-muted-foreground">
-                                    3文字以上。半角英字（**大文字も使用可能**）、数字、アンダースコア（_）のみ
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    3文字以上。半角英字（大文字も可）、数字、アンダースコア（_）のみ。ログインIDは他の利用者には公開されず、登録後の変更はできません。
                                 </p>
                             )}
                         </div>
@@ -138,8 +140,8 @@ export default function LoginPage() {
                                 required
                             />
                             {isSignUp && (
-                                <p className="text-xs text-muted-foreground">
-                                    6文字以上。半角英字・数字・記号が使えます
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    6文字以上。半角英字・数字・記号が使えます。パスワードも他の利用者には公開されず、登録後の変更はできません。
                                 </p>
                             )}
                         </div>

@@ -1,14 +1,12 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowRight, Star, User, Store, Palette, Music } from 'lucide-react'
+import { Star, User, Store, Palette, Music } from 'lucide-react'
 import { NewsList } from '@/components/common/NewsList'
 import { CautionNotes } from '@/components/common/CautionNotes'
 import { PaymentNotes } from '@/components/common/PaymentNotes'
 
 export default function Home() {
-  console.log('Rendering Home Page on Server');
   return (
     <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
       {/* Hero Section */}
@@ -27,12 +25,13 @@ export default function Home() {
                   この空、長田色
                 </h2>
               </div>
-              <div className="pt-8 md:pt-12">
-                <Link href="/booth">
-                  <Button size="lg" className="h-12 px-8">
-                    ブースを探す <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
+              <div className="pt-8 md:pt-12 space-y-2 text-left md:text-center max-w-xl mx-auto md:mx-0">
+                <p className="text-base md:text-lg text-foreground/90 font-medium leading-relaxed">
+                  校内祭：2026.5.8（金）9:30〜15:00
+                </p>
+                <p className="text-base md:text-lg text-foreground/90 font-medium leading-relaxed">
+                  一般祭：2026.5.9（土）9:00〜15:00
+                </p>
               </div>
             </div>
             <div className='w-full md:w-1/3 py-4 max-w-[400px]'>

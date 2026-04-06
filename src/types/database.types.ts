@@ -135,6 +135,7 @@ export interface Database {
                     start_time: string
                     end_time: string
                     capacity: number | null
+                    festival_day: 'school' | 'public'
                 }
                 Insert: {
                     slot_id?: string
@@ -142,6 +143,7 @@ export interface Database {
                     start_time: string
                     end_time: string
                     capacity?: number | null
+                    festival_day?: 'school' | 'public'
                 }
                 Update: {
                     slot_id?: string
@@ -149,6 +151,7 @@ export interface Database {
                     start_time?: string
                     end_time?: string
                     capacity?: number | null
+                    festival_day?: 'school' | 'public'
                 }
                 Relationships: [
                     {
@@ -340,6 +343,7 @@ export interface Database {
             news: {
                 Row: {
                     news_id: string
+                    title: string
                     content: string
                     is_important: boolean
                     is_active: boolean
@@ -348,6 +352,7 @@ export interface Database {
                 }
                 Insert: {
                     news_id?: string
+                    title?: string
                     content: string
                     is_important?: boolean
                     is_active?: boolean
@@ -356,6 +361,7 @@ export interface Database {
                 }
                 Update: {
                     news_id?: string
+                    title?: string
                     content?: string
                     is_important?: boolean
                     is_active?: boolean
@@ -383,6 +389,14 @@ export interface Database {
             }
             issue_fastpass_ticket: {
                 Args: { p_slot_id: string }
+                Returns: Json
+            }
+            get_fastpass_sales_status: {
+                Args: Record<string, never>
+                Returns: Json
+            }
+            discard_expired_fastpass_ticket: {
+                Args: { p_ticket_id: string }
                 Returns: Json
             }
             verify_and_use_ticket: {
@@ -471,6 +485,7 @@ export interface Database {
                     end_time: string
                     capacity: number
                     issued_count: number
+                    festival_day: string
                 }[]
             }
             admin_update_slot_capacity: {

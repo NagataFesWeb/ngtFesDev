@@ -13,6 +13,7 @@ import { Trash2, AlertTriangle, Users, Settings, RefreshCcw, Ticket, ChevronRigh
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { cn } from '@/lib/utils'
 import { NewsManager } from '@/components/admin/NewsManager'
+import { FastpassSaleSettings } from '@/components/admin/FastpassSaleSettings'
 
 import { Switch } from '@/components/ui/switch'
 
@@ -22,6 +23,7 @@ interface Slot {
     issued_count: number;
     start_time: string;
     end_time: string;
+    festival_day: string;
 }
 
 interface Project {
@@ -337,6 +339,8 @@ export default function AdminDashboard() {
                 {/* --- FASTPASS TAB --- */}
                 <TabsContent value="fastpass" className="space-y-4">
                     {!selectedFpProject ? (
+                        <>
+                        <FastpassSaleSettings />
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center"><Ticket className="mr-2" /> 整理券(ファストパス)管理</CardTitle>
@@ -382,6 +386,7 @@ export default function AdminDashboard() {
                                 )}
                             </CardContent>
                         </Card>
+                        </>
                     ) : (
                         <Card>
                             <CardHeader>
@@ -405,6 +410,7 @@ export default function AdminDashboard() {
                                                 <table className="w-full text-sm text-left">
                                                     <thead className="bg-muted text-muted-foreground">
                                                         <tr>
+                                                            <th className="p-3 font-medium">祭日</th>
                                                             <th className="p-3 font-medium">開始 - 終了</th>
                                                             <th className="p-3 font-medium">発行済</th>
                                                             <th className="p-3 font-medium">上限数 (Capacity)</th>
@@ -413,8 +419,12 @@ export default function AdminDashboard() {
                                                     <tbody>
                                                         {slots.map((slot) => (
                                                             <tr key={slot.slot_id} className="border-t">
+                                                                <td className="p-3 text-sm">
+                                                                    {slot.festival_day === 'public' ? '一般祭' : '校内祭'}
+                                                                </td>
                                                                 <td className="p-3 font-mono">
-                                                                    {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
+                                                                    {new Date(slot.start_time).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                    {' '}-{' '}
                                                                     {new Date(slot.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                 </td>
                                                                 <td className="p-3">{slot.issued_count} 枚</td>
@@ -444,7 +454,9 @@ export default function AdminDashboard() {
                         <CardContent>
                             {loadingSettings ? <LoadingSpinner /> : (
                                 <div className="space-y-6">
-                                    {settings.map((setting) => (
+                                    {settings.filter((s) =>
+                                        !s.key.startsWith('fastpass_sale_')
+                                    ).map((setting) => (
                                         <div key={setting.key} className="flex items-center justify-between rounded-lg border p-4">
                                             <div className="space-y-0.5">
                                                 <div className="font-medium">
