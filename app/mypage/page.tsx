@@ -30,6 +30,7 @@ export default function MyPage() {
     const [tickets, setTickets] = useState<FastPassTicket[]>([])
     const [loading, setLoading] = useState(true)
     const [discardingId, setDiscardingId] = useState<string | null>(null)
+    const [cancelingId, setCancelingId] = useState<string | null>(null)
 
     useEffect(() => {
         if (!sessionLoading && !session) {
@@ -136,6 +137,29 @@ export default function MyPage() {
     const expiredTickets = tickets.filter(
         (t) => t.fastpass_slots?.end_time && !isFastpassTicketStillValid(t.fastpass_slots.end_time)
     )
+
+    const handleCancelTicket = async (ticketId: string) => {
+        if (!window.confirm('こちらの整理券をキャンセル（返却）します。よろしいですか？\n※キャンセルを取り消すことはできません。')) return;
+        
+        setCancelingId(ticketId)
+        try {
+            // @ts-expect-error: New RPC, defined in migration, waiting for type generation
+            const { data, error } = await supabase.rpc('cancel_fastpass_ticket', {
+                p_ticket_id: ticketId,
+            })
+            if (error) throw error
+            const row = data as { status?: string | number; code?: string }
+            if (row?.code === 'CANNOT_CANCEL' || (typeof row?.status === 'number' && row.status >= 400)) {
+                throw new Error(row.code || 'CANNOT_CANCEL')
+            }
+            toast.success('整理券をキャンセルしました')
+            await fetchTickets()
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : 'キャンセルできませんでした')
+        } finally {
+            setCancelingId(null)
+        }
+    }
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -247,9 +271,21 @@ export default function MyPage() {
                                                     : '--:--'}
                                             </p>
                                         </div>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-xs text-muted-foreground mb-4">
                                             この画面を運営スタッフに提示してください。
                                         </p>
+                                        {ticket.fastpass_slots?.start_time && new Date() <= new Date(ticket.fastpass_slots.start_time) && (
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="w-full text-foreground/70"
+                                                disabled={cancelingId === ticket.ticket_id}
+                                                onClick={() => handleCancelTicket(ticket.ticket_id)}
+                                            >
+                                                {cancelingId === ticket.ticket_id ? <LoadingSpinner className="mr-2" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                                                キャンセルする
+                                            </Button>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

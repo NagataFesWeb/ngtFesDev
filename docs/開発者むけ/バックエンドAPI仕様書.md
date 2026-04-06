@@ -139,6 +139,30 @@ Supabaseでは `postgrest-js` クライアントライブラリを使用する�
   }
   ```
 
+#### `cancel_fastpass_ticket` (Database Function)
+* **概要**: 取得済みの整理券をキャンセルし、時間枠の残り枠数を1つ回復させる。
+* **権限**: Authenticated User (Guest)
+* **引数**:
+  * `p_ticket_id` (uuid): キャンセルしたいチケットのID
+* **処理**:
+  1. チケットの所有者が実行ユーザー(`auth.uid()`)と一致するか確認。
+  2. チケットが未使用(`used = false`)であることを確認。
+  3. 時間枠の開始時刻(`start_time`)を過ぎていないか確認。
+  4. 条件を満たせば `fastpass_tickets` から物理削除し、発行枚数を自動回復させる。
+* **Response JSON (Success)**:
+  ```json
+  {
+    "status": "success"
+  }
+  ```
+* **Response JSON (Error)**:
+  ```json
+  {
+    "status": 400,
+    "code": "CANNOT_CANCEL"
+  }
+  ```
+
 ---
 
 ### 2.3 クライアントサイド長田検定（クイズ）関連
