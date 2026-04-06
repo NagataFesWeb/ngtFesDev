@@ -34,6 +34,7 @@ interface Project {
     fastpass_enabled?: boolean;
     total_slots?: number;
     total_issued?: number;
+    updated_at?: string | null;
 }
 
 interface SystemSetting {
@@ -118,9 +119,29 @@ export default function AdminDashboard() {
 
     const fetchProjects = async () => {
         setLoadingProjects(true)
-        const { data, error } = await supabase.rpc('admin_get_projects_status')
-        if (error) toast.error('企画一覧取得失敗: ' + error.message)
-        else setProjects(data as Project[])
+        const [projectsRes, congestionRes] = await Promise.all([
+            supabase.rpc('admin_get_projects_status'),
+            supabase.from('congestion').select('project_id, updated_at')
+        ])
+        
+        if (projectsRes.error) {
+            toast.error('企画一覧取得失敗: ' + projectsRes.error.message)
+        } else {
+            const projectsData = projectsRes.data as Project[]
+            const updatedMap: Record<string, string> = {}
+            if (congestionRes.data) {
+                congestionRes.data.forEach(c => {
+                    if (c.updated_at) updatedMap[c.project_id] = c.updated_at
+                })
+            }
+            
+            const projectsWithUpdate = projectsData.map(p => ({
+                ...p,
+                updated_at: updatedMap[p.project_id] || null
+            }))
+            
+            setProjects(projectsWithUpdate)
+        }
         setLoadingProjects(false)
     }
 
@@ -153,6 +174,26 @@ export default function AdminDashboard() {
         fetchFpProjects()
         fetchSettings()
     }, [])
+
+    const [now, setNow] = useState(Date.now())
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 60000)
+        return () => clearInterval(timer)
+    }, [])
+
+    const formatTimeAgo = (updatedAt?: string | null) => {
+        if (!updatedAt) return { text: '未更新', isOld: false }
+        const diffMins = Math.floor((now - new Date(updatedAt).getTime()) / 60000)
+        if (diffMins < 0) return { text: '0分前更新', isOld: false }
+        
+        const hours = Math.floor(diffMins / 60)
+        const mins = diffMins % 60
+        
+        if (hours > 0) {
+            return { text: `${hours}時間${mins}分前更新`, isOld: true }
+        }
+        return { text: `${mins}分前更新`, isOld: false }
+    }
 
     // Filter Logic
     const filteredProjects = projects.filter(project =>
@@ -296,11 +337,14 @@ export default function AdminDashboard() {
                                                 <th className="p-3 font-medium">クラス</th>
                                                 <th className="p-3 font-medium">企画名</th>
                                                 <th className="p-3 font-medium">現在の状況</th>
+                                                <th className="p-3 font-medium">最終更新</th>
                                                 <th className="p-3 font-medium">変更</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredProjects.map((project) => (
+                                            {filteredProjects.map((project) => {
+                                                const timeInfo = formatTimeAgo(project.updated_at)
+                                                return (
                                                 <tr key={project.project_id} className="border-t hover:bg-muted/50">
                                                     <td className="p-3 font-mono">{project.class_name}</td>
                                                     <td className="p-3 font-medium">{project.title}</td>
@@ -316,6 +360,15 @@ export default function AdminDashboard() {
                                                         </span>
                                                     </td>
                                                     <td className="p-3">
+                                                        <span className={cn(
+                                                            "text-sm flex items-center gap-1",
+                                                            timeInfo.isOld ? "text-red-600 font-bold" : "text-muted-foreground"
+                                                        )}>
+                                                            {timeInfo.isOld && <AlertTriangle className="h-3 w-3" />}
+                                                            {timeInfo.text}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-3">
                                                         <select
                                                             className="flex h-9 w-28 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
                                                             value={project.congestion_level}
@@ -327,7 +380,8 @@ export default function AdminDashboard() {
                                                         </select>
                                                     </td>
                                                 </tr>
-                                            ))}
+                                                )
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
