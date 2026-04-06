@@ -16,6 +16,7 @@ import { NewsManager } from '@/components/admin/NewsManager'
 import { FastpassSaleSettings } from '@/components/admin/FastpassSaleSettings'
 
 import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 interface Slot {
     slot_id: string;
@@ -35,6 +36,7 @@ interface Project {
     total_slots?: number;
     total_issued?: number;
     updated_at?: string | null;
+    type?: string;
 }
 
 interface SystemSetting {
@@ -97,6 +99,9 @@ export default function AdminDashboard() {
     const [projects, setProjects] = useState<Project[]>([])
     const [loadingProjects, setLoadingProjects] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
+    const [filterType, setFilterType] = useState('all')
+    const [filterLevel, setFilterLevel] = useState('all')
+    const [filterOldOnly, setFilterOldOnly] = useState(false)
 
     // FastPass Stats
     const [fpProjects, setFpProjects] = useState<Project[]>([])
@@ -119,9 +124,10 @@ export default function AdminDashboard() {
 
     const fetchProjects = async () => {
         setLoadingProjects(true)
-        const [projectsRes, congestionRes] = await Promise.all([
+        const [projectsRes, congestionRes, projectsDataRes] = await Promise.all([
             supabase.rpc('admin_get_projects_status'),
-            supabase.from('congestion').select('project_id, updated_at')
+            supabase.from('congestion').select('project_id, updated_at'),
+            supabase.from('projects').select('project_id, type')
         ])
         
         if (projectsRes.error) {
@@ -134,10 +140,17 @@ export default function AdminDashboard() {
                     if (c.updated_at) updatedMap[c.project_id] = c.updated_at
                 })
             }
+            const typeMap: Record<string, string> = {}
+            if (projectsDataRes.data) {
+                projectsDataRes.data.forEach(p => {
+                    if (p.type) typeMap[p.project_id] = p.type
+                })
+            }
             
             const projectsWithUpdate = projectsData.map(p => ({
                 ...p,
-                updated_at: updatedMap[p.project_id] || null
+                updated_at: updatedMap[p.project_id] || null,
+                type: typeMap[p.project_id] || 'class'
             }))
             
             setProjects(projectsWithUpdate)
@@ -182,7 +195,7 @@ export default function AdminDashboard() {
     }, [])
 
     const formatTimeAgo = (updatedAt?: string | null) => {
-        if (!updatedAt) return { text: '未更新', isOld: false }
+        if (!updatedAt) return { text: '未更新', isOld: true }
         const diffMins = Math.floor((now - new Date(updatedAt).getTime()) / 60000)
         if (diffMins < 0) return { text: '0分前更新', isOld: false }
         
@@ -196,10 +209,16 @@ export default function AdminDashboard() {
     }
 
     // Filter Logic
-    const filteredProjects = projects.filter(project =>
-        (project.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (project.class_name || '').toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    const filteredProjects = projects.filter(project => {
+        const matchesSearch = (project.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (project.class_name || '').toLowerCase().includes(searchTerm.toLowerCase())
+            
+        const matchesType = filterType === 'all' || project.type === filterType
+        const matchesLevel = filterLevel === 'all' || project.congestion_level.toString() === filterLevel
+        const matchesOld = filterOldOnly ? formatTimeAgo(project.updated_at).isOld : true
+        
+        return matchesSearch && matchesType && matchesLevel && matchesOld
+    })
 
     // --- Actions ---
 
@@ -317,15 +336,42 @@ export default function AdminDashboard() {
                                     目安: 空き(20%未満), やや混(20-80%), 混雑(80%以上)
                                 </span>
                             </CardDescription>
-                            <div className="mt-4 relative">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="search"
-                                    placeholder="企画名またはクラスで検索..."
-                                    className="pl-9"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                            <div className="mt-4 flex flex-wrap gap-3 items-center">
+                                <div className="relative w-full sm:w-64 shrink-0">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        type="search"
+                                        placeholder="企画名またはクラスで検索..."
+                                        className="pl-9 h-10 border-input shadow-sm"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <select 
+                                    className="flex h-10 w-full sm:w-auto rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                                    value={filterType}
+                                    onChange={(e) => setFilterType(e.target.value)}
+                                >
+                                    <option value="all">すべての企画種別</option>
+                                    <option value="class">教室模擬</option>
+                                    <option value="food">食品模擬</option>
+                                    <option value="exhibition">展示</option>
+                                    <option value="stage">ステージ</option>
+                                </select>
+                                <select 
+                                    className="flex h-10 w-full sm:w-auto rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                                    value={filterLevel}
+                                    onChange={(e) => setFilterLevel(e.target.value)}
+                                >
+                                    <option value="all">すべての混雑状況</option>
+                                    <option value="1">1: 空いている</option>
+                                    <option value="2">2: やや混雑</option>
+                                    <option value="3">3: 混雑</option>
+                                </select>
+                                <div className="flex items-center space-x-2 border rounded-md px-3 h-10 shadow-sm bg-card w-full sm:w-auto shrink-0">
+                                    <Switch id="old-only" checked={filterOldOnly} onCheckedChange={setFilterOldOnly} />
+                                    <Label htmlFor="old-only" className="text-sm font-medium cursor-pointer whitespace-nowrap">更新1時間以上のみ</Label>
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent>
