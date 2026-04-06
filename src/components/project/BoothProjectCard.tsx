@@ -5,10 +5,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Clock } from 'lucide-react'
+import { MapPin, Clock, AlertTriangle } from 'lucide-react'
 import { StatusIcon } from '@/components/common/StatusIcon'
 import { Database } from '@/types/database.types'
 import { getProjectTypeBadgeClassName, getProjectTypeLabel, getNormalizedProjectSchedule } from '@/lib/projectDisplay'
+import { cn } from '@/lib/utils'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
@@ -31,11 +32,17 @@ export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideC
     }, [])
     
     let timeAgoText = null;
+    let isOld = false;
     if (updatedAt) {
         const diffMins = Math.floor((now - new Date(updatedAt).getTime()) / 60000)
         if (diffMins < 1) timeAgoText = 'たった今更新'
         else if (diffMins >= 1440) timeAgoText = '1日以上前更新'
         else timeAgoText = `${diffMins}分前更新`
+        
+        if (diffMins >= 60) isOld = true;
+    } else {
+        timeAgoText = '未更新'
+        isOld = true;
     }
 
     return (
@@ -93,7 +100,15 @@ export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideC
                 <CardFooter className="px-7 py-4 mt-auto flex items-center justify-between border-t bg-logo-background/50">
                     <div className="flex flex-col">
                         <span className="inline-flex h-6 items-center text-xs leading-none text-muted-foreground font-medium">混雑状況</span>
-                        {timeAgoText && <span className="text-[10px] text-muted-foreground/80 mt-0.5">{timeAgoText}</span>}
+                        {timeAgoText && (
+                            <span className={cn(
+                                "text-[10px] mt-0.5 flex items-center gap-0.5",
+                                isOld ? "text-red-500 font-bold" : "text-muted-foreground/80"
+                            )}>
+                                {isOld && <AlertTriangle className="h-2.5 w-2.5" />}
+                                {timeAgoText}
+                            </span>
+                        )}
                     </div>
                     <StatusIcon level={congestionLevel} showLabel className="h-6 items-center" />
                 </CardFooter>
