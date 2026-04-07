@@ -16,9 +16,10 @@ interface BoothProjectCardProps {
     congestionLevel?: number
     waitTime?: number 
     hideClassId?: boolean
+    globalFastpassEnabled?: boolean
 }
 
-export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideClassId = false }: BoothProjectCardProps) => {
+export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideClassId = false, globalFastpassEnabled = true }: BoothProjectCardProps) => {
     const normalizedSchedule = getNormalizedProjectSchedule(project)
 
     return (
@@ -44,8 +45,8 @@ export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideC
                                     待ち {waitTime}分
                                 </Badge>
                             )}
-                            {project.fastpass_enabled && (
-                                <Badge variant="secondary" className="text-xs">FP対象</Badge>
+                            {project.fastpass_enabled && globalFastpassEnabled && (
+                                <Badge className="text-xs font-bold tracking-wide bg-gradient-to-r from-amber-400 to-orange-500 text-white border-none shadow-sm hover:from-amber-500 hover:to-orange-600">FP対象</Badge>
                             )}
                         </div>
                     </div>

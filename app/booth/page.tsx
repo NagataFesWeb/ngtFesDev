@@ -12,7 +12,15 @@ export const metadata: Metadata = {
 export const revalidate = 60
 
 export default async function BoothPage() {
-    const { data: projectsWithStatus, error } = await supabase.rpc('get_projects_with_status')
+    const [
+        { data: projectsWithStatus, error },
+        { data: fpSetting }
+    ] = await Promise.all([
+        supabase.rpc('get_projects_with_status'),
+        supabase.from('system_settings').select('value').eq('key', 'fastpass_enabled').single()
+    ])
+
+    const globalFastpassEnabled = fpSetting?.value === true || fpSetting?.value === 'true'
 
     if (error) {
         console.error('Error fetching projects:', error)
@@ -24,7 +32,7 @@ export default async function BoothPage() {
 
     return (
         <div className="flex flex-col">
-            <BoothClient initialProjects={boothProjects} />
+            <BoothClient initialProjects={boothProjects} globalFastpassEnabled={globalFastpassEnabled} />
             <CautionNotes />
             <PaymentNotes />
         </div>

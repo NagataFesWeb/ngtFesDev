@@ -11,9 +11,10 @@ import { ProjectWithStatus } from '@/components/project/ProjectList'
 
 interface BoothClientProps {
     initialProjects: ProjectWithStatus[]
+    globalFastpassEnabled?: boolean
 }
 
-export const BoothClient = ({ initialProjects }: BoothClientProps) => {
+export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: BoothClientProps) => {
     const [projects] = useState<ProjectWithStatus[]>(initialProjects)
     const [congestionMap, setCongestionMap] = useState<Record<string, number>>(() => {
         const map: Record<string, number> = {}
@@ -142,6 +143,7 @@ export const BoothClient = ({ initialProjects }: BoothClientProps) => {
                                     project={project as unknown as React.ComponentProps<typeof BoothProjectCard>['project']}
                                     congestionLevel={congestionMap[project.project_id]}
                                     waitTime={project.wait_time_min}
+                                    globalFastpassEnabled={globalFastpassEnabled}
                                 />
                             ))}
                         </div>
