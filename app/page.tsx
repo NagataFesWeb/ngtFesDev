@@ -15,21 +15,21 @@ export default function Home() {
           <div className='md:flex md:items-center md:gap-12'>
             <div className='md:w-2/3 w-full'>
               <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none pt-4 whitespace-nowrap">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none pt-4 whitespace-nowrap text-white">
                   第79回 長田高校文化祭
                 </h1>
-                <h2 className="mx-auto max-w-[700px] text-8xl limelight whitespace-nowrap">
+                <h2 className="mx-auto max-w-[700px] text-8xl limelight whitespace-nowrap text-white">
                   SOLA
                 </h2>
-                <h2 className="mx-auto max-w-[700px] text-4xl whitespace-nowrap">
+                <h2 className="mx-auto max-w-[700px] text-4xl whitespace-nowrap text-white">
                   この空、長田色
                 </h2>
               </div>
-              <div className="pt-8 md:pt-12 space-y-2 text-left md:text-center max-w-xl mx-auto md:mx-0">
-                <p className="text-base md:text-lg text-foreground/90 font-medium leading-relaxed">
+              <div className="pt-8 md:pt-12 space-y-2 text-center max-w-xl mx-auto">
+                <p className="text-base md:text-lg text-foreground/90 font-medium leading-relaxed text-white">
                   校内祭：2026.5.8（金）9:30〜15:00
                 </p>
-                <p className="text-base md:text-lg text-foreground/90 font-medium leading-relaxed">
+                <p className="text-base md:text-lg text-foreground/90 font-medium leading-relaxed text-white">
                   一般祭：2026.5.9（土）9:00〜15:00
                 </p>
               </div>
@@ -37,7 +37,7 @@ export default function Home() {
             <div className='w-full md:w-1/3 py-4 max-w-[400px]'>
               <div>
                 <figure>
-                  <Image src="/1772606843056.jpg" alt="長田高校文化祭" width={400} height={400} className='w-full' />
+                  <Image src="/2026logo.png" alt="長田高校文化祭" width={400} height={400} className='w-full' />
                 </figure>
               </div>
             </div>

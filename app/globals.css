@@ -7,14 +7,13 @@
   --color-background: var(--background);
   --color-semi-foreground: var(--semi-foreground);
   --color-logo-background: var(--logo-background);
-  --color-hero-first-background:var(--hero-first-background);
-  --color-hero-second-background:var(--hero-second-background);
-  --color-hero-third-background:var(--hero-third-background);
+  --color-hero-first-background: var(--hero-first-background);
+  --color-hero-second-background: var(--hero-second-background);
+  --color-hero-third-background: var(--hero-third-background);
 
 
   --color-foreground: var(--foreground);
-  --color-sky-background: var(--sky-background)
-  --color-footer-foreground: var(--footer-foreground);
+  --color-sky-background: var(--sky-background) --color-footer-foreground: var(--footer-foreground);
   --color-footer-background: var(--footer-background);
   --color-header-foreground: var(--header-foreground);
   --color-header-background: var(--header-background);
@@ -62,17 +61,17 @@
   --radius: 0.625rem;
   --background: oklch(98.448% 0.01137 217.998);
   --sky-background: oklch(98.448% 0.01137 217.998);
-  --logo-background:oklch(0.9214 0.0573 218.59);
-  --semi-foreground:rgb(204 243 255);
-  --hero-first-background:#6adcf8;
-  --hero-second-background:#fadf62;
-  --hero-third-background:#f9aa07;
+  --logo-background: oklch(0.9214 0.0573 218.59);
+  --semi-foreground: rgb(204 243 255);
+  --hero-first-background: #16dAEF;
+  --hero-second-background: #FAD300;
+  --hero-third-background: #FFA00E;
 
   --foreground: oklch(0.145 0 0);
-  --header-background:#6adcf7;
-  --footer-foreground:oklch(1 0 0);
-  --footer-background:#fdb314;
-  --header-foreground:oklch(0.245 0 0);
+  --header-background: #6adcf7;
+  --footer-foreground: oklch(1 0 0);
+  --footer-background: #fdb314;
+  --header-foreground: oklch(0.245 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -82,8 +81,8 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   /* --muted: oklch(0.97 0 0); */
-  --muted:rgb(224, 248, 255);
-  --muted-foreground: oklch(0.556 0 0); 
+  --muted: rgb(224, 248, 255);
+  --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -143,10 +142,12 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
-  .limelight{
+
+  .limelight {
     font-family: var(--font-limelight);
   }
 }
