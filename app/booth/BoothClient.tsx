@@ -8,13 +8,16 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
 import { ProjectWithStatus } from '@/components/project/ProjectList'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 
 interface BoothClientProps {
     initialProjects: ProjectWithStatus[]
     globalFastpassEnabled?: boolean
+    initialUpdatedAtMap?: Record<string, string>
 }
 
-export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: BoothClientProps) => {
+export const BoothClient = ({ initialProjects, globalFastpassEnabled = true, initialUpdatedAtMap = {} }: BoothClientProps) => {
     const [projects] = useState<ProjectWithStatus[]>(initialProjects)
     const [congestionMap, setCongestionMap] = useState<Record<string, number>>(() => {
         const map: Record<string, number> = {}
@@ -23,9 +26,12 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: B
         })
         return map
     })
+    
+    const [updatedAtMap, setUpdatedAtMap] = useState<Record<string, string>>(initialUpdatedAtMap)
 
     const [searchTerm, setSearchTerm] = useState('')
     const [activeTab, setActiveTab] = useState('all')
+    const [showFpOnly, setShowFpOnly] = useState(false)
     
     // Attempt to get the venue map image from Supabase Storage
     const [mapUrl, setMapUrl] = useState<string | null>(null)
@@ -58,8 +64,12 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: B
                 },
                 (payload) => {
                     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-                        const newRecord = payload.new as { project_id: string; level: number }
+                        const newRecord = payload.new as { project_id: string; level: number; updated_at?: string }
                         setCongestionMap(prev => ({ ...prev, [newRecord.project_id]: newRecord.level }))
+                        setUpdatedAtMap(prev => ({ 
+                            ...prev, 
+                            [newRecord.project_id]: newRecord.updated_at || new Date().toISOString() 
+                        }))
                     }
                 }
             )
@@ -75,7 +85,8 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: B
             (project.class_id && project.class_id.toLowerCase().includes(searchTerm.toLowerCase()))
         
         const matchesTab = activeTab === 'all' ? true : project.type === activeTab
-        return matchesSearch && matchesTab
+        const matchesFp = showFpOnly ? project.fastpass_enabled : true
+        return matchesSearch && matchesTab && matchesFp
     })
 
     return (
@@ -118,15 +129,23 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: B
                         </TabsList>
                     </Tabs>
                     
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            type="search"
-                            placeholder="企画名・クラスで検索..."
-                            className="pl-8"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        {globalFastpassEnabled && (
+                            <div className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors px-1">
+                                <Switch id="fp-only" checked={showFpOnly} onCheckedChange={setShowFpOnly} />
+                                <Label htmlFor="fp-only" className="text-sm font-medium cursor-pointer whitespace-nowrap">FP対象のみ</Label>
+                            </div>
+                        )}
+                        <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="search"
+                                placeholder="企画名・クラスで検索..."
+                                className="pl-8"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -144,6 +163,7 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true }: B
                                     congestionLevel={congestionMap[project.project_id]}
                                     waitTime={project.wait_time_min}
                                     globalFastpassEnabled={globalFastpassEnabled}
+                                    updatedAt={updatedAtMap[project.project_id]}
                                 />
                             ))}
                         </div>
