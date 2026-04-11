@@ -122,10 +122,10 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true, ini
             <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <Tabs defaultValue="all" onValueChange={setActiveTab} className="w-full sm:w-auto">
-                        <TabsList className="grid w-full grid-cols-3 sm:w-[400px]">
-                            <TabsTrigger value="all">全て</TabsTrigger>
-                            <TabsTrigger value="class">教室模擬</TabsTrigger>
-                            <TabsTrigger value="food">食品模擬</TabsTrigger>
+                        <TabsList className="w-full sm:w-auto h-12 sm:h-10">
+                            <TabsTrigger value="all" className="flex-1 sm:flex-none">全て</TabsTrigger>
+                            <TabsTrigger value="class" className="flex-1 sm:flex-none">教室模擬</TabsTrigger>
+                            <TabsTrigger value="food" className="flex-1 sm:flex-none">食品模擬</TabsTrigger>
                         </TabsList>
                     </Tabs>
                     

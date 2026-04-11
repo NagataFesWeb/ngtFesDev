@@ -140,7 +140,7 @@ export default function MyPage() {
 
     const handleCancelTicket = async (ticketId: string) => {
         if (!window.confirm('こちらの整理券をキャンセル（返却）します。よろしいですか？\n※キャンセルを取り消すことはできません。')) return;
-        
+
         setCancelingId(ticketId)
         try {
             // @ts-expect-error: New RPC, defined in migration, waiting for type generation
@@ -275,9 +275,9 @@ export default function MyPage() {
                                             この画面を運営スタッフに提示してください。
                                         </p>
                                         {ticket.fastpass_slots?.start_time && new Date() <= new Date(ticket.fastpass_slots.start_time) && (
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 className="w-full text-foreground/70"
                                                 disabled={cancelingId === ticket.ticket_id}
                                                 onClick={() => handleCancelTicket(ticket.ticket_id)}
@@ -324,25 +324,26 @@ export default function MyPage() {
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-1 text-destructive">枠の終了時刻を過ぎたため使用できません。</p>
-                                            </div>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="shrink-0"
-                                                disabled={discardingId === ticket.ticket_id}
-                                                onClick={() => handleDiscardExpired(ticket.ticket_id)}
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                {discardingId === ticket.ticket_id ? '削除中...' : '一覧から削除'}
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
+                                            </div >
+        <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            disabled={discardingId === ticket.ticket_id}
+            onClick={() => handleDiscardExpired(ticket.ticket_id)}
+        >
+            <Trash2 className="mr-2 h-4 w-4" />
+            {discardingId === ticket.ticket_id ? '削除中...' : '一覧から削除'}
+        </Button>
+                                        </CardContent >
+                                    </Card >
+                                ))
+}
+                            </div >
                         )}
-                    </div>
+                    </div >
                 )}
-            </section>
-        </div>
+            </section >
+        </div >
     )
 }
