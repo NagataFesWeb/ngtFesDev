@@ -299,12 +299,31 @@ export default function MyPage() {
                                         <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                             <div>
                                                 <p className="font-medium">{ticket.fastpass_slots?.projects?.title || '不明な企画'}</p>
-                                                {ticket.fastpass_slots?.festival_day && (
-                                                    <Badge variant="secondary" className="mt-1">
-                                                        {festivalDayLabel(ticket.fastpass_slots.festival_day)}
-                                                    </Badge>
-                                                )}
-                                                <p className="text-xs text-muted-foreground mt-1">枠の終了時刻を過ぎたため使用できません。</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {ticket.fastpass_slots?.festival_day && (
+                                                        <Badge variant="secondary">
+                                                            {festivalDayLabel(ticket.fastpass_slots.festival_day)}
+                                                        </Badge>
+                                                    )}
+                                                    <span className="text-xs text-muted-foreground font-mono">
+                                                        {ticket.fastpass_slots?.start_time
+                                                            ? new Date(ticket.fastpass_slots.start_time).toLocaleString('ja-JP', {
+                                                                month: 'numeric',
+                                                                day: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })
+                                                            : '--:--'}
+                                                        ~
+                                                        {ticket.fastpass_slots?.end_time
+                                                            ? new Date(ticket.fastpass_slots.end_time).toLocaleTimeString('ja-JP', {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            })
+                                                            : '--:--'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-1 text-destructive">枠の終了時刻を過ぎたため使用できません。</p>
                                             </div>
                                             <Button
                                                 variant="outline"

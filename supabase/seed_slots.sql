@@ -4,8 +4,8 @@
 DO $$
 DECLARE
     r_project RECORD;
-    v_school DATE := DATE '2026-05-08';
-    v_public DATE := DATE '2026-05-09';
+    v_school DATE := DATE '2026-04-11';
+    v_public DATE := DATE '2026-04-12';
 BEGIN
     FOR r_project IN SELECT project_id, title FROM public.projects WHERE fastpass_enabled = true LOOP
         RAISE NOTICE 'Seeding slots for: %', r_project.title;
@@ -15,7 +15,7 @@ BEGIN
             (r_project.project_id, (v_school || ' 09:30:00+09')::timestamptz, (v_school || ' 11:00:00+09')::timestamptz, 20, 'school'),
             (r_project.project_id, (v_school || ' 11:00:00+09')::timestamptz, (v_school || ' 12:00:00+09')::timestamptz, 20, 'school'),
             (r_project.project_id, (v_school || ' 13:00:00+09')::timestamptz, (v_school || ' 14:00:00+09')::timestamptz, 20, 'school'),
-            (r_project.project_id, (v_school || ' 14:00:00+09')::timestamptz, (v_school || ' 15:00:00+09')::timestamptz, 20, 'school');
+            (r_project.project_id, (v_school || ' 22:50:00+09')::timestamptz, (v_school || ' 23:00:00+09')::timestamptz, 20, 'school');
 
         INSERT INTO public.fastpass_slots (project_id, start_time, end_time, capacity, festival_day)
         VALUES
