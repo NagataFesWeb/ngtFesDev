@@ -336,7 +336,7 @@ END;
 $$;
 
 -- 5.2 オペレーター：プロジェクト情報更新
-CREATE OR REPLACE FUNCTION public.operator_update_project(p_operator_token TEXT, p_description TEXT, p_image_url TEXT)
+CREATE OR REPLACE FUNCTION public.operator_update_project(p_operator_token TEXT, p_title TEXT, p_description TEXT, p_image_url TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -351,6 +351,7 @@ BEGIN
 
     UPDATE public.projects
     SET
+        title = COALESCE(p_title, title),
         description = COALESCE(p_description, description),
         image_url = COALESCE(p_image_url, image_url)
     WHERE class_id = v_class_id;

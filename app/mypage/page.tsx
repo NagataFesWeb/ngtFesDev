@@ -140,7 +140,7 @@ export default function MyPage() {
 
     const handleCancelTicket = async (ticketId: string) => {
         if (!window.confirm('こちらの整理券をキャンセル（返却）します。よろしいですか？\n※キャンセルを取り消すことはできません。')) return;
-        
+
         setCancelingId(ticketId)
         try {
             // @ts-expect-error: New RPC, defined in migration, waiting for type generation
@@ -275,9 +275,9 @@ export default function MyPage() {
                                             この画面を運営スタッフに提示してください。
                                         </p>
                                         {ticket.fastpass_slots?.start_time && new Date() <= new Date(ticket.fastpass_slots.start_time) && (
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 className="w-full text-foreground/70"
                                                 disabled={cancelingId === ticket.ticket_id}
                                                 onClick={() => handleCancelTicket(ticket.ticket_id)}
