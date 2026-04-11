@@ -218,6 +218,7 @@ export default function OperatorDashboard() {
 }
 
 function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operatorToken: string, projectId: string | null, isEditEnabled: boolean }) {
+    const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [imageUrl, setImageUrl] = useState('')
     const [uploading, setUploading] = useState(false)
@@ -230,10 +231,11 @@ function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operator
         const fetchProject = async () => {
             const { data } = await supabase
                 .from('projects')
-                .select('description, image_url')
+                .select('title, description, image_url')
                 .eq('project_id', projectId)
                 .single()
             if (data) {
+                setTitle(data.title || '')
                 setDescription(data.description || '')
                 setImageUrl(data.image_url || '')
             }
@@ -271,6 +273,7 @@ function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operator
         try {
             const { data, error } = await supabase.rpc('operator_update_project', {
                 p_operator_token: operatorToken,
+                p_title: title,
                 p_description: description,
                 p_image_url: imageUrl
             })
@@ -302,6 +305,16 @@ function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operator
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label>企画名</Label>
+                    <Input
+                        placeholder="企画名を入力..."
+                        value={title}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
+                        disabled={!isEditEnabled}
+                    />
+                </div>
+
                 <div className="space-y-2">
                     <Label>模擬店・企画の説明文</Label>
                     <Textarea
