@@ -1215,22 +1215,21 @@ ON CONFLICT (key) DO NOTHING;
 
 -- 11.2 クラスデータ（2年・3年）
 INSERT INTO public.classes (class_id, class_name, password_hash) VALUES
-('2-1', '2年1組', 'pass21'),
-('2-2', '2年2組', 'pass22'),
-('2-3', '2年3組', 'pass23'),
-('2-4', '2年4組', 'pass24'),
-('2-5', '2年5組', 'pass25'),
-('2-6', '2年6組', 'pass26'),
-('2-7', '2年7組', 'pass27'),
-('2-8', '2年8組', 'pass28'),
-('3-1', '3年1組', 'pass31'),
-('3-2', '3年2組', 'pass32'),
-('3-3', '3年3組', 'pass33'),
-('3-4', '3年4組', 'pass34'),
-('3-5', '3年5組', 'pass35'),
-('3-6', '3年6組', 'pass36'),
-('3-7', '3年7組', 'pass37'),
-('3-8', '3年8組', 'pass38')
+('2-1', '2年1組', 'pass_2-1'),
+('2-2', '2年2組', 'pass_2-2'),
+('2-3', '2年3組', 'pass_2-3'),
+('2-4', '2年4組', 'pass_2-4'),
+('2-56', '2年5組・6組', 'pass_2-56'),
+('2-7', '2年7組', 'pass_2-7'),
+('2-8', '2年8組', 'pass_2-8'),
+('3-1', '3年1組', 'pass_3-1'),
+('3-2', '3年2組', 'pass_3-2'),
+('3-3', '3年3組', 'pass_3-3'),
+('3-4', '3年4組', 'pass_3-4'),
+('3-5', '3年5組', 'pass_3-5'),
+('3-6', '3年6組', 'pass_3-6'),
+('3-7', '3年7組', 'pass_3-7'),
+('3-8', '3年8組', 'pass_3-8')
 ON CONFLICT (class_id) DO NOTHING;
 
 -- 11.3 プロジェクトデータ
@@ -1240,8 +1239,7 @@ INSERT INTO public.projects (class_id, type, title, description, fastpass_enable
 ('2-2', 'class', 'Haunted 2-2',  '最恐のお化け屋敷',              false, NULL, '302教室', 102),
 ('2-3', 'class', 'Casino 2-3',   '大人の社交場カジノ',            true,  NULL, '303教室', 103),
 ('2-4', 'class', 'Maze 2-4',     '脱出不可能迷路',                false, NULL, '304教室', 104),
-('2-5', 'class', 'Cinema 2-5',   '自作映画上映',                  true,  NULL, '305教室', 105),
-('2-6', 'class', 'Photo 2-6',    '映えスポット写真館',            false, NULL, '306教室', 106),
+('2-56', 'class', 'Haunted 2-5&6', '2年5組・6組合同のお化け屋敷', false, NULL, '305・306教室', 105),
 ('2-7', 'class', 'Coffee 2-7',   '喫茶店 (展示)',                  true,  NULL, '307教室', 107),
 ('2-8', 'class', 'Game 2-8',     'レトロゲームセンター',          false, NULL, '308教室', 108),
 -- 3年：フード
@@ -1265,7 +1263,7 @@ WHERE NOT EXISTS (
 
 
 -- 11.5 追加のシードデータ
--- Classes
+-- Classes (Exhibition & Stage)
 INSERT INTO public.classes (class_id, class_name, password_hash) VALUES
 ('buturi', '物理部', 'pass_buturi'),
 ('syasin', '写真部', 'pass_syasin'),
@@ -1281,10 +1279,24 @@ INSERT INTO public.classes (class_id, class_name, password_hash) VALUES
 ('sinbun', '新聞委員会', 'pass_sinbun'),
 ('seibutu', '生物部', 'pass_seibutu'),
 ('brass-band', '吹奏楽部', 'pass_brass_band'),
-('dance', 'ダンス部', 'pass_dance')
+('dance', 'ダンス部', 'pass_dance'),
+('specios', 'Specios', 'pass_specios'),
+('broadcasting', '放送委員会', 'pass_broadcasting'),
+('drama', '演劇部', 'pass_drama'),
+('catherine', 'キャサリンのまつげ。', 'pass_catherine'),
+('shumatsu', '週末ホールディングス', 'pass_shumatsu'),
+('iris-blue', 'IRIS blue', 'pass_iris-blue'),
+('music', '音楽部', 'pass_music'),
+('copy-cat', 'Copy Cat', 'pass_copy_cat'),
+('line', 'line', 'pass_line'),
+('koshianen', 'こしあねん', 'pass_koshianen'),
+('nanala', 'nanala', 'pass_nanala'),
+('traverse', 'Traverse', 'pass_traverse'),
+('ousia', 'Ousia', 'pass_ousia'),
+('milky', 'Milky♡', 'pass_milky')
 ON CONFLICT (class_id) DO NOTHING;
 
--- Projects
+-- Projects (Exhibition)
 INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled, location, schedule, sort_order) VALUES
 ('sakado', 'exhibition', '茶華道部', 'お茶と生け花の雅な世界。日本の伝統文化に触れてみませんか？', false, '家庭準備室・作法室', NULL, 301),
 ('bijutu', 'exhibition', '美術部', '個性豊かな部員による独創的なアート作品の数々。', false, '306教室', NULL, 308),
@@ -1296,9 +1308,28 @@ INSERT INTO public.projects (class_id, type, title, description, fastpass_enable
 ('ESS', 'exhibition', 'ESS 部', 'Enjoy English! 英語で楽しくコミュニケーションしましょう。', false, '405教室', NULL, 311),
 ('katei', 'exhibition', '家庭部', '手作りの温もりを感じる小物の展示。部員による自信作です。', false, '306教室', NULL, 309),
 ('sinbun', 'exhibition', '新聞委員会', '最近の学校ニュースを凝縮！長田高校の「今」をお届けします。', false, '204教室', NULL, 304),
-('seibutu', 'exhibition', '生物部', '校内に潜む生き物たちの生態を観察。生命の不思議に迫ります。', false, '406教室', NULL, 312),
-('brass-band', 'stage', '吹奏楽部', '吹奏楽部による演奏をお楽しみください。', false, '講堂ステージ', '【１日目】 9:30 ～10:20\n【２日目】13:25～14:15', 401),
-('dance', 'stage', 'ダンス部', 'ダンス部によるパフォーマンスをお楽しみください。', false, '野外ステージ', '【２日目】9:15～9:55', 402)
+('seibutu', 'exhibition', '生物部', '校内に潜む生き物たちの生態を観察。生命の不思議に迫ります。', false, '406教室', NULL, 312)
+ON CONFLICT DO NOTHING;
+
+-- Projects (Stage)
+INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled, location, schedule, sort_order) VALUES
+('brass-band', 'stage', '吹奏楽部', '吹奏楽部による圧巻のパフォーマンス！', false, '講堂ステージ', '【１日目】 9:30～10:20\n【２日目】 10:35～11:25', 401),
+('specios', 'stage', 'Specios', '野外ステージを熱く盛り上げます！', false, '野外ステージ', '【１日目】 10:10～10:30', 402),
+('broadcasting', 'stage', '放送委員会', '放送委員会による特別ステージ企画。', false, '講堂ステージ', '【１日目】 10:35～11:05\n【２日目】 9:50～10:20', 403),
+('drama', 'stage', '演劇部', '演劇部渾身の舞台をご堪能ください。', false, '講堂ステージ', '【１日目】 11:20～12:20\n【２日目】 13:05～14:05', 404),
+('catherine', 'stage', 'キャサリンのまつげ。', '個性溢れるパフォーマンスをお届けします！', false, '野外ステージ', '【１日目】 12:25～12:45', 405),
+('shumatsu', 'stage', '週末ホールディングス', '講堂が笑いと熱気に包まれる！', false, '講堂ステージ', '【１日目】 12:35～13:05', 406),
+('iris-blue', 'stage', 'IRIS blue', '最高にブルーな青春ステージ！', false, '野外ステージ', '【１日目】 13:00～13:20', 407),
+('music', 'stage', '音楽部', '美しいハーモニーと演奏をお楽しみください。', false, '講堂ステージ', '【１日目】 13:20～14:20\n【２日目】 11:45～12:45', 408),
+('copy-cat', 'stage', 'Copy Cat', '誰でも知ってるあの曲を！', false, '野外ステージ', '【１日目】 14:35～15:00', 409),
+('line', 'stage', 'line', '洗練されたステージパフォーマンスを披露。', false, '講堂ステージ', '【１日目】 14:35～14:55', 410),
+('syodo', 'stage', '書道部（パフォーマンス）', '書道部による大迫力のパフォーマンス！', false, '講堂ステージ', '【２日目】 9:20～9:40', 411),
+('koshianen', 'stage', 'こしあねん', 'みんなで一緒に盛り上がりましょう！', false, '野外ステージ', '【２日目】 9:30～9:50', 412),
+('nanala', 'stage', 'nanala', '元気いっぱいのステージをお届け！', false, '野外ステージ', '【２日目】 10:20～10:40', 413),
+('dance', 'stage', 'ダンス部', 'ダンス部による圧巻のパフォーマンス！', false, '野外ステージ', '【２日目】 11:05～11:45', 414),
+('traverse', 'stage', 'Traverse', '唯一無二のステージを体感せよ！', false, '野外ステージ', '【２日目】 12:45～13:05', 415),
+('ousia', 'stage', 'Ousia', '心を揺さぶるパフォーマンス！', false, '野外ステージ', '【２日目】 14:05～14:30', 416),
+('milky', 'stage', 'Milky♡', '講堂を沸かせる最高のステージ！', false, '講堂ステージ', '【２日目】 14:15～14:30', 417)
 ON CONFLICT DO NOTHING;
 
 -- Init Congestion for projects
