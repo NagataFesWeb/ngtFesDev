@@ -316,11 +316,17 @@ function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operator
                 </div>
 
                 <div className="space-y-2">
-                    <Label>模擬店・企画の説明文</Label>
+                    <div className="flex items-center justify-between">
+                        <Label>模擬店・企画の説明文</Label>
+                        <span className={`text-xs ${description.length > 100 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                            {description.length} / 100
+                        </span>
+                    </div>
                     <Textarea
                         placeholder="企画の魅力を伝えましょう..."
                         value={description}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+                        maxLength={100}
                         rows={5}
                         disabled={!isEditEnabled}
                     />

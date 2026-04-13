@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { QRCodeDisplay } from '@/components/auth/QRCodeDisplay'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { LogOut, Ticket, Trash2 } from 'lucide-react'
+import { LogOut, Ticket, Trash2, Award, PlayCircle } from 'lucide-react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { festivalDayLabel, isFastpassTicketStillValid } from '@/lib/fastpass'
 
@@ -31,6 +32,9 @@ export default function MyPage() {
     const [loading, setLoading] = useState(true)
     const [discardingId, setDiscardingId] = useState<string | null>(null)
     const [cancelingId, setCancelingId] = useState<string | null>(null)
+    const [quizRank, setQuizRank] = useState<{
+        rank: number | null, total_users: number, total_score: number, highest_score: number, play_count: number
+    } | null>(null)
 
     useEffect(() => {
         if (!sessionLoading && !session) {
@@ -60,9 +64,45 @@ export default function MyPage() {
         setLoading(false)
     }, [userId])
 
+    const fetchQuizRank = useCallback(async (currentName?: string | null) => {
+        if (!userId) return
+        
+        const { data: myScore } = await supabase.from('quiz_scores').select('*').eq('user_id', userId).single()
+        
+        if (!myScore) {
+            setQuizRank(null)
+            return
+        }
+
+        let myRank = null;
+        if (currentName) {
+            const { data: top3 } = await supabase.rpc('get_quiz_ranking')
+            if (top3) {
+                 // 名前の重複による誤表示を防ぐため、スコアとプレイ回数も完全に一致するか確認します
+                 const index = top3.findIndex((t: any) => 
+                    t.display_name === currentName &&
+                    t.total_score === myScore.total_score &&
+                    t.highest_score === myScore.highest_score &&
+                    t.play_count === myScore.play_count
+                 );
+                 if (index !== -1) {
+                     myRank = index + 1;
+                 }
+            }
+        }
+        
+        setQuizRank({
+            rank: myRank,
+            total_users: 0, 
+            total_score: myScore.total_score ?? 0,
+            highest_score: myScore.highest_score ?? 0,
+            play_count: myScore.play_count ?? 0
+        })
+    }, [userId])
+
     useEffect(() => {
         const fetchUserData = async () => {
-            if (!session?.user) return
+            if (!session?.user) return null
             const { data: userData } = await supabase
                 .from('users')
                 .select('display_name, login_id')
@@ -76,14 +116,18 @@ export default function MyPage() {
                 if ('login_id' in userData) {
                     setLoginId((userData.login_id as string) || '')
                 }
+                return userData.display_name as string
             }
+            return null
         }
 
         if (session?.user) {
-            void fetchUserData()
+            fetchUserData().then((name) => {
+                void fetchQuizRank(name)
+            })
             void fetchTickets()
         }
-    }, [session, fetchTickets])
+    }, [session, fetchTickets, fetchQuizRank])
 
     const handleUpdateProfile = async () => {
         if (!session?.user) return
@@ -213,6 +257,68 @@ export default function MyPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <section className="space-y-4 mb-8">
+                <h2 className="text-xl font-semibold flex items-center">
+                    <Award className="mr-2 h-5 w-5 text-yellow-500" />
+                    長田検定 成績・ランキング
+                </h2>
+                
+                <Card>
+                    <CardContent className="p-6">
+                        {quizRank ? (
+                            <div className="grid gap-6 sm:grid-cols-2">
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground font-medium">現在の順位</p>
+                                    <div className="flex items-baseline gap-2">
+                                        {quizRank.rank !== null ? (
+                                            <>
+                                                <span className="text-3xl font-bold text-primary">{quizRank.rank}</span>
+                                                <span className="text-muted-foreground">位 （TOP 3入り！）</span>
+                                            </>
+                                        ) : (
+                                            <span className="text-muted-foreground pt-1">圏外（TOP 3のみ順位表示）</span>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 sm:grid-cols-1 gap-4">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">累計スコア</p>
+                                        <p className="text-xl font-semibold">{quizRank.total_score}</p>
+                                    </div>
+                                    <div className="flex justify-between sm:justify-start gap-8">
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">最高スコア</p>
+                                            <p className="text-lg font-medium">{quizRank.highest_score}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">プレイ回数</p>
+                                            <p className="text-lg font-medium">{quizRank.play_count} 回</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="sm:col-span-2 pt-4 border-t">
+                                    <Button asChild className="w-full sm:w-auto" variant="outline">
+                                        <Link href="/quiz">
+                                            <PlayCircle className="mr-2 h-4 w-4" /> 長田検定をプレイする
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-6">
+                                <p className="text-muted-foreground mb-4">まだ長田検定を受けていません</p>
+                                <Button asChild>
+                                    <Link href="/quiz">
+                                        <PlayCircle className="mr-2 h-4 w-4" /> 長田検定に挑戦する
+                                    </Link>
+                                </Button>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </section>
 
             <section className="space-y-4">
                 <h2 className="text-xl font-semibold flex items-center">
