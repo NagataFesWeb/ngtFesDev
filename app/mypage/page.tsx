@@ -79,7 +79,12 @@ export default function MyPage() {
             const { data: top3 } = await supabase.rpc('get_quiz_ranking')
             if (top3) {
                  // 名前の重複による誤表示を防ぐため、スコアとプレイ回数も完全に一致するか確認します
-                 const index = top3.findIndex((t: any) => 
+                 const index = (top3 as any[]).findIndex((t: { 
+                     display_name: string, 
+                     total_score: number, 
+                     highest_score: number, 
+                     play_count: number 
+                 }) => 
                     t.display_name === currentName &&
                     t.total_score === myScore.total_score &&
                     t.highest_score === myScore.highest_score &&
