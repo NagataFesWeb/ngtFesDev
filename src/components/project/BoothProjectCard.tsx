@@ -27,9 +27,13 @@ export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideC
     
     const [now, setNow] = useState<number | null>(null)
     useEffect(() => {
-        setNow(Date.now())
-        const timer = setInterval(() => setNow(Date.now()), 60000) // Update every minute
-        return () => clearInterval(timer)
+        // Hydration safety: set 'now' after mount to avoid mismatch, but use setTimeout to avoid synchronous setState warning
+        const timer = setInterval(() => setNow(Date.now()), 60000)
+        const timeout = setTimeout(() => setNow(Date.now()), 0)
+        return () => {
+            clearInterval(timer)
+            clearTimeout(timeout)
+        }
     }, [])
     
     let timeAgoText = null;
