@@ -14,7 +14,7 @@ export default function Home() {
         <div className="container mx-auto px-4 md:px-6 flex flex-col items-center text-center space-y-4">
           <div className='md:flex md:items-center md:gap-12'>
             <div className='md:w-2/3 w-full'>
-              <div className="space-y-2">
+              <div className="space-y-3 drop-shadow-xl">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none pt-4 whitespace-nowrap text-white">
                   第79回 長田高校文化祭
                 </h1>
@@ -25,7 +25,7 @@ export default function Home() {
                   この空、長田色
                 </h2>
               </div>
-              <div className="pt-8 md:pt-12 space-y-2 text-center max-w-xl mx-auto">
+              <div className="pt-8 md:pt-12 space-y-3 text-center max-w-xl mx-auto drop-shadow-xl">
                 <p className="text-base md:text-lg text-foreground/90 font-medium leading-relaxed text-white">
                   校内祭：2026.5.8（金）9:30〜15:00
                 </p>

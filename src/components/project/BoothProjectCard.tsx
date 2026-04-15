@@ -25,15 +25,20 @@ interface BoothProjectCardProps {
 export const BoothProjectCard = ({ project, congestionLevel = 1, waitTime, hideClassId = false, globalFastpassEnabled = true, updatedAt }: BoothProjectCardProps) => {
     const normalizedSchedule = getNormalizedProjectSchedule(project)
     
-    const [now, setNow] = useState(Date.now())
+    const [now, setNow] = useState<number | null>(null)
     useEffect(() => {
-        const timer = setInterval(() => setNow(Date.now()), 60000) // Update every minute
-        return () => clearInterval(timer)
+        // Hydration safety: set 'now' after mount to avoid mismatch, but use setTimeout to avoid synchronous setState warning
+        const timer = setInterval(() => setNow(Date.now()), 60000)
+        const timeout = setTimeout(() => setNow(Date.now()), 0)
+        return () => {
+            clearInterval(timer)
+            clearTimeout(timeout)
+        }
     }, [])
     
     let timeAgoText = null;
     let isOld = false;
-    if (updatedAt) {
+    if (updatedAt && now !== null) {
         const diffMins = Math.floor((now - new Date(updatedAt).getTime()) / 60000)
         if (diffMins < 1) timeAgoText = 'たった今更新'
         else if (diffMins >= 1440) timeAgoText = '1日以上前更新'
