@@ -14,6 +14,7 @@ interface Question {
     q_id: number
     text: string
     choices: string[]
+    explanation?: string
     correct_hash: string
 }
 
@@ -127,20 +128,22 @@ export default function QuizPlayPage() {
             setScore(newScore)
         }
 
-        // Wait 1 second before proceeding automatically
-        setIsWaiting(true)
-        setTimeout(() => {
-            setIsWaiting(false)
-            if (currentIndex < questions.length - 1) {
-                setSelectedChoice(null)
-                setCorrectChoiceIndex(null)
-                setIsAnswered(false)
-                setIsCorrect(null)
-                setCurrentIndex(currentIndex + 1)
-            } else {
-                submitTotalScore(newScore)
-            }
-        }, 1000)
+        // Set waiting state to false (we will now use a manual 'Next' button)
+        setIsWaiting(false)
+    }
+
+    const handleNextQuestion = () => {
+        if (!isAnswered) return
+
+        if (currentIndex < questions.length - 1) {
+            setSelectedChoice(null)
+            setCorrectChoiceIndex(null)
+            setIsAnswered(false)
+            setIsCorrect(null)
+            setCurrentIndex(currentIndex + 1)
+        } else {
+            submitTotalScore(score)
+        }
     }
 
     const submitTotalScore = async (finalScore: number) => {
@@ -245,7 +248,7 @@ export default function QuizPlayPage() {
                                 // Correct Answer: Green
                                 customClass = 'bg-green-600 hover:bg-green-600 text-white border-green-600 disabled:opacity-100'
                             } else if (idx === selectedChoice) {
-                                // User's Incorrect Choice: Muted Blue (Steel Blue/Slate)
+                                // User's Incorrect Choice: Slate
                                 customClass = 'bg-slate-500 hover:bg-slate-500 text-white border-slate-500 disabled:opacity-100'
                             } else {
                                 // Other Choices: Gray
@@ -273,7 +276,30 @@ export default function QuizPlayPage() {
                             </Button>
                         )
                     })}
+
+                    {/* Explanation Section */}
+                    {isAnswered && q.explanation && (
+                        <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-primary/10 animate-in fade-in slide-in-from-top-2 duration-500">
+                            <h4 className="font-bold text-sm text-primary mb-2 flex items-center">
+                                <span className="mr-2">💡</span> 解説
+                            </h4>
+                            <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                                {q.explanation}
+                            </p>
+                        </div>
+                    )}
                 </CardContent>
+
+                {isAnswered && (
+                    <CardFooter className="pt-2 border-t bg-muted/20">
+                        <Button 
+                            className="ml-auto font-bold px-8 h-12" 
+                            onClick={handleNextQuestion}
+                        >
+                            {currentIndex < questions.length - 1 ? '次の問題へ' : '結果を見る'}
+                        </Button>
+                    </CardFooter>
+                )}
             </Card>
         </div>
     )

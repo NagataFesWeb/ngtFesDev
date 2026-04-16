@@ -132,7 +132,8 @@ CREATE TABLE IF NOT EXISTS public.quiz_questions (
     question_id SERIAL PRIMARY KEY,
     question_text TEXT NOT NULL,
     choices JSONB NOT NULL, -- ["A", "B", "C", "D"]
-    correct_choice_index INTEGER NOT NULL CHECK (correct_choice_index BETWEEN 0 AND 3)
+    correct_choice_index INTEGER NOT NULL CHECK (correct_choice_index BETWEEN 0 AND 3),
+    explanation TEXT DEFAULT ''
 );
 
 -- 2.8 quiz_rewards（クイズ報酬）
@@ -676,6 +677,8 @@ BEGIN
             'q_id', question_id,
             'text', question_text,
             'choices', choices,
+            'explanation', explanation,
+            -- 正解のインデックス番号を文字列化してソルトと結合しハッシュ化
             'correct_hash', encode(digest(question_id::text || correct_choice_index::text || v_salt, 'sha256'), 'hex')
         )
     )
