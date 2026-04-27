@@ -1,12 +1,12 @@
 -- Classes
 INSERT INTO public.classes (class_id, class_name, password_hash) VALUES
-('1-1', '1年1組', 'pass11'),
-('3-1', '3年1組', 'pass31');
+('PhysicsClub', '物理部', 'pass_PhysicsClub'),
+('PhotoClub', '写真部', 'pass_PhotoClub');
 
 -- Projects
 INSERT INTO public.projects (class_id, type, title, description, fastpass_enabled) VALUES
-('1-1', 'exhibition', '1-1 Exhibition', 'Great exhibition', false),
-('3-1', 'food', '3-1 Yakisoba', 'Delicious yakisoba', true);
+('PhysicsClub', 'exhibition', '物理部', '', false),
+('PhotoClub', 'exhibition', '写真部', '', false);
 
 -- Init Congestion for projects
 INSERT INTO public.congestion (project_id, level) 

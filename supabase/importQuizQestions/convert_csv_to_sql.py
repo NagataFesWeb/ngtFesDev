@@ -50,6 +50,6 @@ def generate_quiz_sql(csv_path, output_sql_path):
         print("No valid rows found in CSV.")
 
 if __name__ == "__main__":
-    csv_file = r"c:\Users\ryupc\WorkSpace\NgtHighSchool\NgtFes26\ngtFesDev\supabase\importQuizQestions\長田検定（回答） - フォームの回答 1.csv"
+    csv_file = r"c:\Users\ryupc\WorkSpace\NgtHighSchool\NgtFes26\ngtFesDev\supabase\importQuizQestions\長田検定（回答） - フォームの回答 2.csv"
     output_file = r"c:\Users\ryupc\WorkSpace\NgtHighSchool\NgtFes26\ngtFesDev\supabase\importQuizQestions\import_quiz.sql"
     generate_quiz_sql(csv_file, output_file)
