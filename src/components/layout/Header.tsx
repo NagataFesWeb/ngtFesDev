@@ -16,25 +16,25 @@ import { supabase } from "@/lib/supabase";
 
 const NavLinks = () => (
   <>
-    <Link href="/" className="text-sm font-medium transition-colors hover:text-primary">
+    <Link href="/" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       トップ
     </Link>
-    <Link href="/booth" className="text-sm font-medium transition-colors hover:text-primary">
+    <Link href="/booth" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       模擬店
     </Link>
-    <Link href="/display" className="text-sm font-medium transition-colors hover:text-primary">
+    <Link href="/display" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       展示
     </Link>
-    <Link href="/stage" className="text-sm font-medium transition-colors hover:text-primary">
+    <Link href="/stage" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       ステージ
     </Link>
-    <Link href="/quiz" className="text-sm font-medium transition-colors hover:text-primary">
+    <Link href="/quiz" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       長田検定
     </Link>
-    <Link href="/mypage" className="text-sm font-medium transition-colors hover:text-primary">
+    <Link href="/mypage" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       マイページ
     </Link>
-    <Link href="/access" className="text-sm font-medium transition-colors hover:text-primary">
+    <Link href="/access" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       アクセス
     </Link>
   </>
@@ -42,25 +42,25 @@ const NavLinks = () => (
 
 const MobileNavLinks = () => (
   <>
-    <Link href="/" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+    <Link href="/" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       トップ
     </Link>
-    <Link href="/booth" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+    <Link href="/booth" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       模擬店
     </Link>
-    <Link href="/display" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+    <Link href="/display" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       展示
     </Link>
-    <Link href="/stage" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+    <Link href="/stage" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       ステージ
     </Link>
-    <Link href="/quiz" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+    <Link href="/quiz" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       長田検定
     </Link>
-    <Link href="/mypage" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+    <Link href="/mypage" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       マイページ
     </Link>
-    <Link href="/access" className="block py-2 text-base font-medium transition-colors hover:text-primary">
+    <Link href="/access" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       アクセス
     </Link>
   </>
@@ -72,7 +72,7 @@ export const Header = () => {
       <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 md:px-8">
         {/* PC用ロゴ & メニュー */}
         <div className="flex items-center">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
+          <Link href="/" className="mr-6 flex items-center space-x-2" prefetch={false}>
             <div className="w-10 lg:w-12">
               <figure>
                 <Image src="/1772606843056.jpg" alt="Logo" width={48} height={48} className="w-full h-auto rounded-full" />
@@ -157,14 +157,14 @@ const AuthButton = () => {
   if (!session) {
     return (
       <Button asChild variant="default" size="sm">
-        <Link href="/login">ログイン</Link>
+        <Link href="/login" prefetch={false}>ログイン</Link>
       </Button>
     );
   }
 
   return (
     <Button asChild variant="outline" size="sm" className="bg-white">
-      <Link href="/mypage">{nickname || "マイページ"}</Link>
+      <Link href="/mypage" prefetch={false}>{nickname || "マイページ"}</Link>
     </Button>
   );
 };

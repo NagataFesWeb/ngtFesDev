@@ -10,10 +10,10 @@ export const Footer = () => {
                     </p>
                 </div>
                 <div className="flex gap-4">
-                    <Link href="/operator/login" className="text-xs text-footer-foreground hover:underline">
+                    <Link href="/operator/login" className="text-xs text-footer-foreground hover:underline" prefetch={false}>
                         運営者ログイン
                     </Link>
-                    <Link href="/admin/login" className="text-xs text-footer-foreground hover:underline">
+                    <Link href="/admin/login" className="text-xs text-footer-foreground hover:underline" prefetch={false}>
                         管理者ログイン
                     </Link>
                 </div>

@@ -23,7 +23,7 @@ export default function OperatorLayout({
             <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
                 <div className="container mx-auto px-4 flex h-14 items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Link href="/operator/dashboard" className="font-bold">
+                        <Link href="/operator/dashboard" className="font-bold" prefetch={false}>
                             運営用ダッシュボード
                         </Link>
                         {className && (
