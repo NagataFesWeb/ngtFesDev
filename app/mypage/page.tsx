@@ -301,7 +301,7 @@ export default function MyPage() {
                                 </div>
                                 <div className="sm:col-span-2 pt-4 border-t">
                                     <Button asChild className="w-full sm:w-auto" variant="outline">
-                                        <Link href="/quiz">
+                                        <Link href="/quiz" prefetch={false}>
                                             <PlayCircle className="mr-2 h-4 w-4" /> 長田検定をプレイする
                                         </Link>
                                     </Button>
@@ -311,7 +311,7 @@ export default function MyPage() {
                             <div className="text-center py-6">
                                 <p className="text-muted-foreground mb-4">まだ長田検定を受けていません</p>
                                 <Button asChild>
-                                    <Link href="/quiz">
+                                    <Link href="/quiz" prefetch={false}>
                                         <PlayCircle className="mr-2 h-4 w-4" /> 長田検定に挑戦する
                                     </Link>
                                 </Button>

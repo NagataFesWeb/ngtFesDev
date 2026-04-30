@@ -49,7 +49,7 @@ export default function Home() {
       <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-            <Link href="/booth" className="group">
+            <Link href="/booth" className="group" prefetch={false}>
               <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
                 <CardHeader className="p-4">
                   <Store className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
@@ -62,7 +62,7 @@ export default function Home() {
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/display" className="group">
+            <Link href="/display" className="group" prefetch={false}>
               <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
                 <CardHeader className="p-4">
                   <Palette className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
@@ -75,7 +75,7 @@ export default function Home() {
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/stage" className="group">
+            <Link href="/stage" className="group" prefetch={false}>
               <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
                 <CardHeader className="p-4">
                   <Music className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
@@ -88,7 +88,7 @@ export default function Home() {
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/quiz" className="group">
+            <Link href="/quiz" className="group" prefetch={false}>
               <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
                 <CardHeader className="p-4">
                   <Star className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
@@ -101,7 +101,7 @@ export default function Home() {
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/mypage" className="group">
+            <Link href="/mypage" className="group" prefetch={false}>
               <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
                 <CardHeader className="p-4">
                   <User className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
