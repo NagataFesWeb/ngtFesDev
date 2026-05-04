@@ -1,12 +1,5 @@
-export default function supabaseLoader({ src, width, quality }: { src: string; width: number; quality?: number }) {
-  // project-imagesバケットの画像のみSupabaseのImage Transformationsを適用する
-  // (ファイルの元形式がJPEG/PNGのまま、動的にWebP化・リサイズして配信するため)
-  if (src.includes('supabase.co/storage/v1/object/public/project-images/')) {
-    const transformedSrc = src.replace('/object/public/', '/render/image/public/');
-    return `${transformedSrc}?width=${width}&format=webp&quality=${quality || 75}`;
-  }
-  
-  // public-assetsやquiz-rewardsバケットの画像は、ユーザーが手動ですでにwebp化しているため
-  // もしくは署名付きURL（sign）を使用しているため、変換APIを通さずそのままのURLを返す
+export default function supabaseLoader({ src }: { src: string; width: number; quality?: number }) {
+  // 案Aへの移行: 実ファイルをWebP化して直接配信するため、変換ロジックをバイパスします。
+  // これにより、Vercelの課金を回避しつつ、Supabase Storageから直接画像を取得します。
   return src;
 }
