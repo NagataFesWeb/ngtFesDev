@@ -19,9 +19,6 @@ const NavLinks = () => (
     <Link href="/" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       トップ
     </Link>
-    <Link href="/theme" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
-      テーマ紹介
-    </Link>
     <Link href="/booth" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       模擬店
     </Link>
@@ -34,11 +31,14 @@ const NavLinks = () => (
     <Link href="/quiz" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       長田検定
     </Link>
-    <Link href="/mypage" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
-      マイページ
-    </Link>
     <Link href="/access" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
       アクセス
+    </Link>
+    <Link href="/theme" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
+      テーマ紹介
+    </Link>
+    <Link href="/mypage" className="text-sm font-medium transition-colors hover:text-primary" prefetch={false}>
+      マイページ
     </Link>
   </>
 );
@@ -47,9 +47,6 @@ const MobileNavLinks = () => (
   <>
     <Link href="/" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       トップ
-    </Link>
-    <Link href="/theme" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
-      テーマ紹介
     </Link>
     <Link href="/booth" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       模擬店
@@ -63,11 +60,14 @@ const MobileNavLinks = () => (
     <Link href="/quiz" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       長田検定
     </Link>
-    <Link href="/mypage" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
-      マイページ
-    </Link>
     <Link href="/access" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
       アクセス
+    </Link>
+    <Link href="/theme" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
+      テーマ紹介
+    </Link>
+    <Link href="/mypage" className="block py-2 text-base font-medium transition-colors hover:text-primary" prefetch={false}>
+      マイページ
     </Link>
   </>
 );
