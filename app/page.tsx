@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Star, User, Store, Palette, Music } from 'lucide-react'
+import { Star, User, Store, Palette, Music, Sparkles } from 'lucide-react'
 import { NewsList } from '@/components/common/NewsList'
 import { CautionNotes } from '@/components/common/CautionNotes'
 import { PaymentNotes } from '@/components/common/PaymentNotes'
@@ -49,6 +49,19 @@ export default function Home() {
       <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+            <Link href="/theme" className="group" prefetch={false}>
+              <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
+                <CardHeader className="p-4">
+                  <Sparkles className="h-8 w-8 mb-2 text-primary group-hover:scale-110 transition-transform" />
+                  <CardTitle className="text-lg">テーマ紹介</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <p className="text-sm md:text-base text-muted-foreground">
+                    文化祭テーマ「SOLA」に込められた思い。
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
             <Link href="/booth" className="group" prefetch={false}>
               <Card className="h-full transition-all duration-300 group-hover:bg-muted/50 group-hover:shadow-md border-primary/10">
                 <CardHeader className="p-4">
