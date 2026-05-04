@@ -26,13 +26,13 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true, ini
         })
         return map
     })
-    
+
     const [updatedAtMap, setUpdatedAtMap] = useState<Record<string, string>>(initialUpdatedAtMap)
 
     const [searchTerm, setSearchTerm] = useState('')
     const [activeTab, setActiveTab] = useState('all')
     const [showFpOnly, setShowFpOnly] = useState(false)
-    
+
     // Attempt to get the venue map image from Supabase Storage
     const [mapUrl, setMapUrl] = useState<string | null>(null)
     const [mapLoading, setMapLoading] = useState(true)
@@ -40,8 +40,8 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true, ini
     useEffect(() => {
         const fetchMap = async () => {
             setMapLoading(true)
-            const { data } = supabase.storage.from('public-assets').getPublicUrl('venue-map-booth.png')
-            
+            const { data } = supabase.storage.from('public-assets').getPublicUrl('venue-map-booth.webp')
+
             // Check if the file actually exists by trying to fetch its headers, or just assume it might not
             // Supabase getPublicUrl doesn't check existence. We can just use the URL and if it 404s, handle it,
             // but a cleaner way is to use an Image component with onError, or just trust the admin uploaded it.
@@ -66,9 +66,9 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true, ini
                     if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
                         const newRecord = payload.new as { project_id: string; level: number; updated_at?: string }
                         setCongestionMap(prev => ({ ...prev, [newRecord.project_id]: newRecord.level }))
-                        setUpdatedAtMap(prev => ({ 
-                            ...prev, 
-                            [newRecord.project_id]: newRecord.updated_at || new Date().toISOString() 
+                        setUpdatedAtMap(prev => ({
+                            ...prev,
+                            [newRecord.project_id]: newRecord.updated_at || new Date().toISOString()
                         }))
                     }
                 }
@@ -83,7 +83,7 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true, ini
     const filteredProjects = projects.filter((project) => {
         const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (project.class_id && project.class_id.toLowerCase().includes(searchTerm.toLowerCase()))
-        
+
         const matchesTab = activeTab === 'all' ? true : project.type === activeTab
         const matchesFp = showFpOnly ? project.fastpass_enabled : true
         return matchesSearch && matchesTab && matchesFp
@@ -95,14 +95,14 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true, ini
                 <h1 className="text-3xl font-bold tracking-tight">模擬店</h1>
                 <p className="text-muted-foreground">教室模擬・食品模擬の企画一覧です。</p>
             </div>
-            
+
             <div className="space-y-4">
                 <h2 className="text-xl font-semibold border-b pb-2">会場マップ</h2>
                 <div className="w-full aspect-video bg-muted rounded-md border flex items-center justify-center overflow-hidden relative">
                     {!mapLoading && mapUrl ? (
-                        <Image 
-                            src={mapUrl} 
-                            alt="会場マップ" 
+                        <Image
+                            src={mapUrl}
+                            alt="会場マップ"
                             fill
                             className="object-contain"
                             onError={(e) => {
@@ -128,7 +128,7 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true, ini
                             <TabsTrigger value="food" className="flex-1 sm:flex-none">食品模擬</TabsTrigger>
                         </TabsList>
                     </Tabs>
-                    
+
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         {globalFastpassEnabled && (
                             <div className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors px-1">

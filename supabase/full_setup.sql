@@ -1360,10 +1360,10 @@ INSERT INTO public.quiz_questions (question_text, choices, correct_choice_index)
 -- Quiz Rewards
 INSERT INTO public.quiz_rewards (required_score, title_name, storage_path)
 VALUES 
-    (10, 'ブロンズ', 'bronze_Nagata_WP.png'),
-    (30, 'シルバー', 'silver_Nagata_WP.png'),
-    (60, 'ゴールド', 'gold_Nagata_WP.png'),
-    (100, 'マスター', 'master_Nagata_WP.png')
+    (10, 'ブロンズ', 'bronze_Nagata_WP.webp'),
+    (30, 'シルバー', 'silver_Nagata_WP.webp'),
+    (60, 'ゴールド', 'gold_Nagata_WP.webp'),
+    (100, 'マスター', 'master_Nagata_WP.webp')
 ON CONFLICT (required_score) DO UPDATE SET 
     storage_path = EXCLUDED.storage_path,
     title_name = EXCLUDED.title_name;

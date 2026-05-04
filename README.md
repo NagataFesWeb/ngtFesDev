@@ -70,10 +70,10 @@ PGPASSWORD="<YOUR_DB_PASSWORD>" psql -h db.<YOUR_PROJECT_REF>.supabase.co -p 543
 2. **画像のアップロード先**:
    * `public-assets` バケットの **ルート直下**（フォルダなし）に配置してください。
 3. **ファイル名（完全一致）**:
-   * `venue-map-booth.png`
+   * `venue-map-booth.webp`
      * 模擬店画面の「会場マップ」で使用
      * 展示画面の「会場マップ」でも同じ画像として使用
-   * `timetable-stage.png`
+   * `timetable-stage.webp`
      * ステージ画面の「タイムテーブル」で使用
 
 ### 6. クイズ報酬（壁紙）のセットアップ (Storage Setup)
@@ -86,10 +86,10 @@ PGPASSWORD="<YOUR_DB_PASSWORD>" psql -h db.<YOUR_PROJECT_REF>.supabase.co -p 543
 2.  **画像のアップロード**:
     *   以下の4つのファイルを `quiz-rewards` バケットの**ルート直下**にアップロードしてください。
     *   ファイル名は**完全に一致**している必要があります：
-        *   `bronze_Nagata_WP.png`
-        *   `silver_Nagata_WP.png`
-        *   `gold_Nagata_WP.png`
-        *   `master_Nagata_WP.png`
+        *   `bronze_Nagata_WP.webp`
+        *   `silver_Nagata_WP.webp`
+        *   `gold_Nagata_WP.webp`
+        *   `master_Nagata_WP.webp`
 
 > [!NOTE]
 > 画像アセットがない場合は、ダミー画像を配置するか、開発者に確認してください。
