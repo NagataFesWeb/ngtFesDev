@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "テーマ紹介 | 長田高校文化祭2026 SOLA",
@@ -21,6 +22,34 @@ export default function ThemePage() {
         </h1>
 
         <div className="space-y-28 md:space-y-40">
+          {/* Greeting */}
+          <section className="flex flex-col items-center text-center space-y-10">
+            <div className="space-y-6">
+              <p className="text-2xl md:text-3xl font-serif text-muted-foreground tracking-widest">Greeting</p>
+              <h2 className="text-4xl md:text-5xl font-bold tracking-widest text-foreground py-4 drop-shadow-sm">
+                ご挨拶
+              </h2>
+            </div>
+
+            <div className="max-w-2xl space-y-8 mt-8">
+              <p className="text-lg md:text-xl leading-[2.5] md:leading-[2.5] text-foreground/90 font-medium">
+                長田生が描く「自由」を体現した模擬店、そして迫力満点のステージの数々。<br />
+                高揚した空気の中で育まれる友情、そして愛。<br />
+                この二日間、この場にいるすべての人が小難しい課題や英単語を忘れ、<br />
+                今しかないこの瞬間を、誰よりも欲張りに楽しみ尽くせるひとときに。<br />
+                そして、文武遊楽、すべてを兼ね備えた長田生のエネルギーで、<br />
+                この空を、私たちの個性あふれる色彩で塗り替え、最高の一瞬を刻みましょう。
+              </p>
+              <p className="text-lg md:text-xl text-muted-foreground text-right pr-4 pt-4">
+                第79回文化祭実行委員長　中西 基
+              </p>
+            </div>
+            
+            <div className="pt-12 md:pt-16">
+              <Image src="/1772606843056.jpg" alt="文化祭ロゴ" width={300} height={300} className="w-48 md:w-64 h-auto drop-shadow-lg mx-auto rounded-full object-cover aspect-square" />
+            </div>
+          </section>
+
           {/* Main Theme */}
           <section className="flex flex-col items-center text-center space-y-10">
             <div className="space-y-4">
