@@ -7,10 +7,11 @@ export const metadata: Metadata = {
 
 export default function ThemePage() {
   return (
-    <div className="flex flex-col min-h-[calc(100vh-3.5rem)] bg-background relative overflow-hidden">
-      {/* Background Gradient similar to poster */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-[#f0f4c3] opacity-40 blur-[120px] -z-10 pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-[#e0f7fa] opacity-40 blur-[80px] -z-10 pointer-events-none" />
+    <div className="flex flex-col min-h-[calc(100vh-3.5rem)] relative overflow-hidden">
+      {/* Background Gradient */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] md:w-[1000px] h-[600px] md:h-[1000px] rounded-full bg-[var(--hero-first-background)] opacity-[0.25] blur-[100px] md:blur-[150px] z-0 pointer-events-none dark:opacity-[0.15]" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] md:w-[700px] h-[400px] md:h-[700px] rounded-full bg-[var(--hero-third-background)] opacity-[0.35] blur-[80px] md:blur-[120px] z-0 pointer-events-none dark:opacity-[0.25]" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] md:w-[400px] h-[200px] md:h-[400px] rounded-full bg-[var(--hero-second-background)] opacity-[0.45] blur-[60px] md:blur-[80px] z-0 pointer-events-none dark:opacity-[0.35]" />
 
       <div className="container mx-auto px-4 py-16 md:py-24 max-w-4xl relative z-10">
         <h1 className="text-center text-3xl md:text-5xl font-bold tracking-widest mb-20 md:mb-32 text-foreground/90">
