@@ -337,7 +337,7 @@ function EditProjectCard({ operatorToken, projectId, isEditEnabled }: { operator
                     <div className="flex items-start gap-4">
                         <div className="border-2 border-dashed rounded-lg p-4 w-32 h-32 flex items-center justify-center bg-slate-50 dark:bg-slate-900 relative overflow-hidden">
                             {imageUrl ? (
-                                <Image src={imageUrl} alt="Project" fill className="object-cover" unoptimized />
+                                <Image src={imageUrl} alt="Project" fill className="object-cover" />
                             ) : (
                                 <ImageIcon className="w-8 h-8 text-muted-foreground" />
                             )}

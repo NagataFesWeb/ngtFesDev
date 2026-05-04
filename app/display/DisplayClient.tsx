@@ -39,7 +39,7 @@ export const DisplayClient = ({ initialProjects }: DisplayClientProps) => {
     useEffect(() => {
         const fetchMap = async () => {
             setMapLoading(true)
-            const { data } = supabase.storage.from('public-assets').getPublicUrl('venue-map-booth.png')
+            const { data } = supabase.storage.from('public-assets').getPublicUrl('venue-map-booth.webp')
             setMapUrl(data.publicUrl)
             setMapLoading(false)
         }
@@ -100,7 +100,7 @@ export const DisplayClient = ({ initialProjects }: DisplayClientProps) => {
                             <TabsTrigger value="40">4F</TabsTrigger>
                         </TabsList>
                     </Tabs>
-                    
+
                     <div className="relative w-full sm:w-64">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input

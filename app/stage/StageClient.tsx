@@ -15,10 +15,10 @@ interface StageClientProps {
 
 export const StageClient = ({ initialProjects }: StageClientProps) => {
     const [projects] = useState<ProjectWithStatus[]>(initialProjects)
-    
+
     const [searchTerm, setSearchTerm] = useState('')
     const [activeTab, setActiveTab] = useState('all')
-    
+
     // Attempt to get the timetable image from Supabase Storage
     const [mapUrl, setMapUrl] = useState<string | null>(null)
     const [mapLoading, setMapLoading] = useState(true)
@@ -26,7 +26,7 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
     useEffect(() => {
         const fetchMap = async () => {
             setMapLoading(true)
-            const { data } = supabase.storage.from('public-assets').getPublicUrl('timetable-stage.png')
+            const { data } = supabase.storage.from('public-assets').getPublicUrl('timetable-stage.webp')
             setMapUrl(data.publicUrl)
             setMapLoading(false)
         }
@@ -36,7 +36,7 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
     const filteredProjects = projects.filter((project) => {
         const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (project.class_id && project.class_id.toLowerCase().includes(searchTerm.toLowerCase()))
-        
+
         // Location will determine if it's 野外ステージ or 講堂ステージ
         const projLoc = project.location || ''
         const matchesTab = activeTab === 'all' ? true : projLoc.includes(activeTab)
@@ -50,14 +50,14 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
                 <h1 className="text-3xl font-bold tracking-tight">ステージ</h1>
                 <p className="text-muted-foreground">野外ステージ・講堂ステージのタイムテーブルと企画一覧です。</p>
             </div>
-            
+
             <div className="space-y-4">
                 <h2 className="text-xl font-semibold border-b pb-2">タイムテーブル</h2>
                 <div className="w-full aspect-video bg-muted rounded-md border flex items-center justify-center overflow-hidden relative">
                     {!mapLoading && mapUrl ? (
-                        <Image 
-                            src={mapUrl} 
-                            alt="タイムテーブル" 
+                        <Image
+                            src={mapUrl}
+                            alt="タイムテーブル"
                             fill
                             className="object-contain"
                             onError={(e) => {
@@ -82,7 +82,7 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
                             <TabsTrigger value="講堂ステージ">講堂ステージ</TabsTrigger>
                         </TabsList>
                     </Tabs>
-                    
+
                     <div className="relative w-full sm:w-64">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input

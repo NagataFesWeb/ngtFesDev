@@ -147,7 +147,7 @@ export default function QuizDashboardPage() {
             // 3. Trigger Download
             const link = document.createElement('a')
             link.href = signData.signedUrl
-            link.download = path.split('/').pop() || 'wallpaper.png'
+            link.download = path.split('/').pop() || 'wallpaper.webp'
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
