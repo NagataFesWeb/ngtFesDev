@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Loader2, Trophy, PlayCircle, Star, Award, Medal, Lock } from 'lucide-react'
+import { Loader2, Trophy, PlayCircle, Star, Award, Medal, Lock, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import QuizPlayComponent from './QuizPlayComponent'
+import { useQuizSync } from './QuizSyncProvider'
 
 export default function QuizDashboardPage() {
     const router = useRouter()
@@ -29,9 +31,21 @@ export default function QuizDashboardPage() {
     }[] | null>(null)
     const [isEnabled, setIsEnabled] = useState<boolean>(true)
     const [downloadingId, setDownloadingId] = useState<number | null>(null)
+    const [isPlaying, setIsPlaying] = useState(false)
+    const [isFetchingRanking, setIsFetchingRanking] = useState(false)
+    const { timeLeft, isSyncing, lastSyncTime } = useQuizSync()
+
+    const formatTime = (sec: number) => {
+        const m = Math.floor(sec / 60)
+        const s = sec % 60
+        return `${m}:${s.toString().padStart(2, '0')}`
+    }
 
     useEffect(() => {
         const fetchData = async () => {
+            // 背景での更新中もスピナーを回すためのステート
+            setIsFetchingRanking(true)
+
             // 1. Check Feature Toggle
             const { data: settings, error: settingsError } = await supabase
                 .from('system_settings')
@@ -41,7 +55,9 @@ export default function QuizDashboardPage() {
 
             if (!settingsError && settings) {
                 const s = settings as { value: boolean | string }
-                setIsEnabled(s.value === true || s.value === 'true')
+                const enabled = (s.value === true || s.value === 'true')
+                setIsEnabled(enabled)
+                localStorage.setItem('quiz_enabled_cache', String(enabled))
             }
 
             // 2. Fetch Ranking & Rewards
@@ -73,22 +89,77 @@ export default function QuizDashboardPage() {
                 .eq('user_id', session.user.id)
                 .single()
 
+            let dbStats = { total_score: 0, highest_score: 0, play_count: 0 }
             if (!error && data) {
-                setStats(data as { total_score: number; highest_score: number; play_count: number })
-            } else {
-                // Return 0s if no record exists yet
-                setStats({ total_score: 0, highest_score: 0, play_count: 0 })
+                dbStats = data as { total_score: number; highest_score: number; play_count: number }
             }
+
+            // Combine with local queue for optimistic UI
+            const queueStr = localStorage.getItem('quiz_sync_queue')
+            if (queueStr) {
+                try {
+                    const queue = JSON.parse(queueStr)
+                    dbStats.total_score += queue.score_delta || 0
+                    dbStats.highest_score = Math.max(dbStats.highest_score, queue.highest_score || 0)
+                    dbStats.play_count += queue.play_count || 0
+                } catch (e) {
+                    console.error('Failed to parse queue', e)
+                }
+            }
+
+            // Save to localStorage for play page reference
+            localStorage.setItem('quiz_user_stats', JSON.stringify(dbStats))
+            setStats(dbStats)
             setLoading(false)
+            setIsFetchingRanking(false)
         }
 
         fetchData()
-    }, [router])
+    }, [router, lastSyncTime])
+
+    // 戻るボタン（ブラウザバック）対策
+    useEffect(() => {
+        const handlePopState = () => {
+            if (isPlaying) {
+                setIsPlaying(false)
+                // 戻った時にローカルのスコアを画面に反映
+                const storedStatsStr = localStorage.getItem('quiz_user_stats')
+                if (storedStatsStr) {
+                    try {
+                        setStats(JSON.parse(storedStatsStr))
+                    } catch (e) {}
+                }
+            }
+        }
+
+        if (isPlaying) {
+            // プレイ開始時にダミーの履歴を追加する
+            window.history.pushState({ quiz: 'playing' }, '')
+            window.addEventListener('popstate', handlePopState)
+        }
+
+        return () => {
+            if (isPlaying) {
+                window.removeEventListener('popstate', handlePopState)
+            }
+        }
+    }, [isPlaying])
 
     if (loading) {
         return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
     }
 
+    if (isPlaying) {
+        return (
+            <div className="container mx-auto px-4 max-w-2xl py-8">
+                <QuizPlayComponent onFinish={() => {
+                    // 終了時は直接 isPlaying を false にするのではなく、
+                    // ブラウザの「戻る」をトリガーしてダミー履歴を消費しつつ状態を戻す
+                    window.history.back()
+                }} />
+            </div>
+        )
+    }
 
     const { total_score = 0, highest_score = 0, play_count = 0 } = stats || {}
 
@@ -198,9 +269,28 @@ export default function QuizDashboardPage() {
             {/* ランキングセクション */}
             {ranking && ranking.length > 0 && (
                 <div className="space-y-4">
-                    <div className="flex items-center gap-2 px-2">
-                        <Trophy className="w-5 h-5 text-yellow-500" />
-                        <h2 className="text-xl font-bold">ランキング（上位3名）</h2>
+                    <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-2">
+                            <Trophy className="w-5 h-5 text-yellow-500" />
+                            <h2 className="text-xl font-bold">ランキング（上位3名）</h2>
+                        </div>
+                        <div className="text-xs font-medium text-muted-foreground flex flex-col items-end gap-1">
+                            {isSyncing || isFetchingRanking ? (
+                                <div className="flex items-center gap-1.5">
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
+                                    <span className="text-primary">更新中...</span>
+                                </div>
+                            ) : (
+                                <>
+                                    <span>次回更新まで: {formatTime(timeLeft)}</span>
+                                    {lastSyncTime > 0 && (
+                                        <span className="text-[10px] opacity-70">
+                                            最終更新: {Math.floor((Date.now() - lastSyncTime) / 60000)}分前
+                                        </span>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
                     <div className="grid gap-3">
                         {ranking.map((row, idx) => {
@@ -313,7 +403,7 @@ export default function QuizDashboardPage() {
                 <Button
                     size="lg"
                     className="w-full text-lg h-16 font-bold"
-                    onClick={() => router.push('/quiz/play')}
+                    onClick={() => setIsPlaying(true)}
                     disabled={!isEnabled}
                 >
                     {isEnabled ? (
@@ -331,7 +421,7 @@ export default function QuizDashboardPage() {
 
                 <p className="text-xs text-center text-muted-foreground">
                     ※ 1回につきランダムに10問出題されます。<br />
-                    ※ スコアの登録は1分に1回のみ可能です。
+                    ※ スコアはバックグラウンドで自動的に同期されます。
                 </p>
             </div>
         </div>

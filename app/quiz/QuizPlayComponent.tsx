@@ -1,14 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
-
-// Remove Node.js 'crypto' import for client-side Web Crypto API usage
 
 interface Question {
     q_id: number
@@ -18,8 +15,7 @@ interface Question {
     correct_hash: string
 }
 
-export default function QuizPlayPage() {
-    const router = useRouter()
+export default function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
     const [loading, setLoading] = useState(true)
     const [questions, setQuestions] = useState<Question[]>([])
     const [currentIndex, setCurrentIndex] = useState(0)
@@ -41,49 +37,67 @@ export default function QuizPlayPage() {
     useEffect(() => {
         const initQuiz = async () => {
             try {
-                // 1. Check Feature Toggle
-                const { data: settings, error: settingsError } = await supabase
-                    .from('system_settings')
-                    .select('value')
-                    .eq('key', 'quiz_enabled')
-                    .single()
-
-                const s = settings as { value: boolean | string }
-                const isEnabled = !settingsError && settings && (s.value === true || s.value === 'true')
+                // 1. Check Feature Toggle from cache
+                const storedSettings = localStorage.getItem('quiz_enabled_cache')
+                let isEnabled = true
+                if (storedSettings) {
+                    isEnabled = storedSettings === 'true'
+                }
 
                 if (!isEnabled) {
                     toast.error('クイズ機能は現在停止されています')
-                    router.push('/quiz')
+                    onFinish()
                     return
                 }
 
-                // 2. Must be logged in
-                const { data: { session } } = await supabase.auth.getSession()
-                if (!session) {
-                    router.push('/login?redirect=/quiz')
-                    return
+                // 2. Fetch questions locally (or from RPC if cache is empty/expired)
+                let allQuestions: Question[] = []
+                const CACHE_KEY = 'quiz_questions_cache_v2'
+                const cachedData = localStorage.getItem(CACHE_KEY)
+                const CACHE_TTL = 60 * 60 * 1000 // 1 hour
+                
+                if (cachedData) {
+                    try {
+                        const parsed = JSON.parse(cachedData)
+                        if (Date.now() - parsed.timestamp < CACHE_TTL) {
+                            allQuestions = parsed.questions
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse cached questions', e)
+                    }
                 }
 
-                // 3. Fetch 10 random questions from DB via RPC
-                const { data, error } = await supabase.rpc('get_quiz_questions')
-                if (error) throw error
+                if (allQuestions.length === 0) {
+                    // This is the ONLY time it fetches from DB during gameplay. 
+                    // If they are completely offline here, they won't be able to play.
+                    // But if they have cache, no DB fetch is made!
+                    const { data, error } = await supabase.rpc('get_quiz_questions')
+                    if (error) throw error
 
-                const questionsData = data as unknown as Question[]
+                    allQuestions = data as unknown as Question[]
 
-                if (!questionsData || questionsData.length === 0) {
-                    throw new Error('問題が取得できませんでした')
+                    if (!allQuestions || allQuestions.length === 0) {
+                        throw new Error('問題が取得できませんでした')
+                    }
+                    
+                    localStorage.setItem(CACHE_KEY, JSON.stringify({
+                        timestamp: Date.now(),
+                        questions: allQuestions
+                    }))
                 }
 
-                setQuestions(questionsData)
+                // Shuffle and pick 10
+                const shuffled = [...allQuestions].sort(() => 0.5 - Math.random())
+                setQuestions(shuffled.slice(0, 10))
             } catch (err: unknown) {
                 toast.error(err instanceof Error ? err.message : String(err))
-                router.push('/quiz')
+                onFinish()
             } finally {
                 setLoading(false)
             }
         }
         initQuiz()
-    }, [router])
+    }, [onFinish])
 
     // Utility to wait for Web Crypto hash
     const hashAnswer = async (q_id: number, choiceIndex: number) => {
@@ -91,7 +105,6 @@ export default function QuizPlayPage() {
             console.error('Crypto API not available')
             return ''
         }
-        // v_salt = 'NgtFes26_Quiz_Salt' matching the database RPC
         const str = `${q_id}${choiceIndex}NgtFes26_Quiz_Salt`
         const msgUint8 = new TextEncoder().encode(str)
         const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgUint8)
@@ -108,7 +121,6 @@ export default function QuizPlayPage() {
 
         const q = questions[currentIndex]
 
-        // Find correct answer by hashing all possibilities to show visual feedback immediately
         let actualCorrectIdx = -1
         for (let i = 0; i < q.choices.length; i++) {
             const hash = await hashAnswer(q.q_id, i)
@@ -128,7 +140,6 @@ export default function QuizPlayPage() {
             setScore(newScore)
         }
 
-        // Set waiting state to false (we will now use a manual 'Next' button)
         setIsWaiting(false)
     }
 
@@ -149,24 +160,46 @@ export default function QuizPlayPage() {
     const submitTotalScore = async (finalScore: number) => {
         setIsSubmitting(true)
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) throw new Error('Session not found')
-
-            const response = await fetch('/api/quiz/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({ score: finalScore })
-            })
-
-            const data = await response.json()
-            if (!response.ok) {
-                throw new Error(data.message || 'スコア登録に失敗しました')
+            // Queue the score locally
+            const storedQueue = localStorage.getItem('quiz_sync_queue')
+            const queue = storedQueue ? JSON.parse(storedQueue) : {
+                score_delta: 0,
+                highest_score: 0,
+                play_count: 0
             }
 
-            setResultData(data)
+            queue.score_delta += finalScore
+            queue.highest_score = Math.max(queue.highest_score, finalScore)
+            queue.play_count += 1
+            
+            localStorage.setItem('quiz_sync_queue', JSON.stringify(queue))
+
+            // Update local user stats for optimistic UI
+            const storedStatsStr = localStorage.getItem('quiz_user_stats')
+            const currentStats = storedStatsStr ? JSON.parse(storedStatsStr) : {
+                total_score: 0,
+                highest_score: 0,
+                play_count: 0
+            }
+
+            const newTotalScore = currentStats.total_score + finalScore
+            const newHighestScore = Math.max(currentStats.highest_score, finalScore)
+            const newPlayCount = currentStats.play_count + 1
+
+            const newStats = {
+                total_score: newTotalScore,
+                highest_score: newHighestScore,
+                play_count: newPlayCount
+            }
+            
+            localStorage.setItem('quiz_user_stats', JSON.stringify(newStats))
+
+            setResultData({
+                score: finalScore,
+                total_score: newStats.total_score,
+                highest_score: newStats.highest_score,
+                play_count: newStats.play_count
+            })
         } catch (err: unknown) {
             toast.error(err instanceof Error ? err.message : String(err))
         } finally {
@@ -181,8 +214,8 @@ export default function QuizPlayPage() {
     // Finished view
     if (resultData || (isSubmitting && currentIndex === questions.length - 1 && isAnswered)) {
         return (
-            <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-3.5rem)] py-12">
-                <Card className="w-full max-w-md text-center shadow-xl border-primary/20">
+            <div className="w-full max-w-md mx-auto">
+                <Card className="w-full text-center shadow-xl border-primary/20">
                     <CardHeader>
                         <CardTitle className="text-2xl">スコア結果</CardTitle>
                     </CardHeader>
@@ -209,7 +242,7 @@ export default function QuizPlayPage() {
                     </CardContent>
                     {!isSubmitting && (
                         <CardFooter>
-                            <Button className="w-full text-lg h-12 font-bold" onClick={() => router.push('/quiz')}>
+                            <Button className="w-full text-lg h-12 font-bold" onClick={onFinish}>
                                 マイページ（称号）へ戻る
                             </Button>
                         </CardFooter>
@@ -222,13 +255,12 @@ export default function QuizPlayPage() {
     // Active quiz view
     const q = questions[currentIndex]
 
-    // Guard: Prevent crash if questions are not yet loaded or empty during redirect
     if (!q) {
         return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
     }
 
     return (
-        <div className="container mx-auto max-w-2xl py-8 space-y-6">
+        <div className="w-full space-y-6">
             <div className="flex justify-between items-center text-sm font-medium text-muted-foreground">
                 <span>問題 {currentIndex + 1} / {questions.length}</span>
                 <span>現在のスコア: {score}</span>
@@ -245,13 +277,10 @@ export default function QuizPlayPage() {
 
                         if (isAnswered && correctChoiceIndex !== null) {
                             if (idx === correctChoiceIndex) {
-                                // Correct Answer: Green
                                 customClass = 'bg-green-600 hover:bg-green-600 text-white border-green-600 disabled:opacity-100'
                             } else if (idx === selectedChoice) {
-                                // User's Incorrect Choice: Slate
                                 customClass = 'bg-slate-500 hover:bg-slate-500 text-white border-slate-500 disabled:opacity-100'
                             } else {
-                                // Other Choices: Gray
                                 customClass = 'bg-muted hover:bg-muted text-muted-foreground border-muted disabled:opacity-100'
                             }
                         }
@@ -277,7 +306,6 @@ export default function QuizPlayPage() {
                         )
                     })}
 
-                    {/* Explanation Section */}
                     {isAnswered && q.explanation && (
                         <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-primary/10 animate-in fade-in slide-in-from-top-2 duration-500">
                             <h4 className="font-bold text-sm text-primary mb-2 flex items-center">
@@ -301,6 +329,12 @@ export default function QuizPlayPage() {
                     </CardFooter>
                 )}
             </Card>
+            
+            <div className="text-center">
+                <Button variant="ghost" className="text-muted-foreground" onClick={onFinish} disabled={isSubmitting}>
+                    クイズを中断して戻る
+                </Button>
+            </div>
         </div>
     )
 }
