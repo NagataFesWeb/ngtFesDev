@@ -98,7 +98,7 @@ export const BoothClient = ({ initialProjects, globalFastpassEnabled = true, ini
 
             <div className="space-y-4">
                 <h2 className="text-xl font-semibold border-b pb-2">会場マップ</h2>
-                <div className="w-full aspect-video bg-muted rounded-md border flex items-center justify-center overflow-hidden relative">
+                <div className="w-full max-w-5xl mx-auto aspect-[2048/1143] bg-muted rounded-md border flex items-center justify-center overflow-hidden relative">
                     {!mapLoading && mapUrl ? (
                         <Image
                             src={mapUrl}
