@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Limelight } from "next/font/google"; // Using Inter for better looking
+import { Inter, Limelight, DotGothic16 } from "next/font/google"; // Using Inter for better looking
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/layout/Header";
@@ -13,6 +13,11 @@ const limelight = Limelight({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-limelight",
+});
+const dotGothic = DotGothic16({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-dotgothic",
 });
 
 const SITE_NAME = "第79回 長田高校文化祭2026「SOLA」 特設HP";
@@ -35,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" suppressHydrationWarning>
-      <body className={cn(inter.className, limelight.variable)} suppressHydrationWarning>
+      <body className={cn(inter.className, limelight.variable, dotGothic.variable)} suppressHydrationWarning>
         <Providers>
           <div className="flex min-h-screen flex-col">
             <Header />

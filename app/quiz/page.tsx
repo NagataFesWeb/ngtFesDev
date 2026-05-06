@@ -14,7 +14,7 @@ import { useQuizTime, useQuizSyncStatus } from './QuizSyncProvider'
 const SyncTimerDisplay = memo(function SyncTimerDisplay() {
     const { timeLeft } = useQuizTime()
     const { isSyncing, lastSyncTime } = useQuizSyncStatus()
-    
+
     const formatTime = (sec: number) => {
         const m = Math.floor(sec / 60)
         const s = sec % 60
@@ -66,7 +66,7 @@ export default function QuizDashboardPage() {
     const [downloadingId, setDownloadingId] = useState<number | null>(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [isFetchingRanking, setIsFetchingRanking] = useState(false)
-    
+
     // 10分に一度しか変わらない StatusContext のみを参照する
     // これにより、カウントダウン（timeLeft）による1秒おきの再レンダリングを回避する
     const { lastSyncTime } = useQuizSyncStatus()
@@ -264,14 +264,21 @@ export default function QuizDashboardPage() {
 
                     {rewards && (
                         (() => {
-                            const nextReward = rewards.find(r => currentStats.total_score < r.required_score)
-                            if (nextReward) {
+                            // 未達成かつ 'hidden' を含まない次の報酬を探す
+                            const nextPublicReward = rewards.find(r =>
+                                currentStats.total_score < r.required_score &&
+                                !r.title_name.toLowerCase().includes('hidden')
+                            )
+
+                            if (nextPublicReward) {
                                 return (
                                     <p className="text-xs text-muted-foreground bg-white/50 px-3 py-1 rounded-full border border-primary/10">
-                                        次の称号（{nextReward.title_name}）まであと <span className="font-bold text-primary">{nextReward.required_score - currentStats.total_score}</span> 問
+                                        次の称号（{nextPublicReward.title_name}）まであと <span className="font-bold text-primary">{nextPublicReward.required_score - currentStats.total_score}</span> 問
                                     </p>
                                 )
                             }
+
+                            // 表向きの称号を全て達成している場合
                             return <p className="text-xs text-yellow-500 font-bold">全ての称号を達成しました！</p>
                         })()
                     )}
@@ -344,21 +351,29 @@ export default function QuizDashboardPage() {
                             if (isSecret && !isUnlocked) return null
 
                             const isNextToUnlock = !isUnlocked && (index === 0 || currentStats.total_score >= rewards[index - 1].required_score)
-                            
+
+                            const isSpecial = reward.id === 6
                             const rewardRank = getRank(reward.required_score)
                             const RewardIcon = rewardRank.icon
 
+                            // 特殊なスタイリング（ID 6のみ）
+                            const cardClass = !isUnlocked
+                                ? "opacity-60 grayscale bg-muted/30"
+                                : isSpecial
+                                    ? "border-magenta-500 bg-magenta-50/30 dark:bg-magenta-900/20 shadow-[0_0_15px_rgba(255,0,255,0.2)] animate-pulse-slow"
+                                    : "border-primary/30 bg-card"
+
                             return (
-                                <Card key={reward.id} className={!isUnlocked ? "opacity-60 grayscale bg-muted/30" : "border-primary/30 bg-card"}>
+                                <Card key={reward.id} className={cardClass}>
                                     <CardContent className="flex items-center p-4">
-                                        <div className={`mr-4 p-2 rounded-full bg-background shadow-sm ${rewardRank.color}`}>
+                                        <div className={`mr-4 p-2 rounded-full bg-background shadow-sm ${isSpecial && isUnlocked ? "text-magenta-500" : rewardRank.color}`}>
                                             <RewardIcon className="w-5 h-5" />
                                         </div>
                                         <div className="flex-1">
-                                            <p className="font-bold">
+                                            <p className={`font-bold ${isSpecial && isUnlocked ? "text-magenta-600 dark:text-magenta-400 font-retro text-lg tracking-tight" : ""}`}>
                                                 {isUnlocked || isNextToUnlock ? reward.title_name : "？？？"}
                                             </p>
-                                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                                            <p className={`text-[10px] text-muted-foreground uppercase tracking-widest ${isSpecial && isUnlocked ? "font-retro opacity-70" : ""}`}>
                                                 必要: {reward.required_score}問
                                             </p>
                                         </div>
@@ -366,15 +381,28 @@ export default function QuizDashboardPage() {
                                             {isUnlocked ? (
                                                 <Button
                                                     size="sm"
-                                                    variant="outline"
-                                                    onClick={() => handleDownload(reward.id)}
+                                                    variant={isSpecial ? "default" : "outline"}
+                                                    onClick={() => {
+                                                        if (isSpecial) {
+                                                            router.push('/quiz/system-override-992-delta-v7-private-2026')
+                                                        } else {
+                                                            handleDownload(reward.id)
+                                                        }
+                                                    }}
                                                     disabled={downloadingId === reward.id}
-                                                    className="border-primary text-primary hover:bg-primary hover:text-white"
+                                                    className={isSpecial
+                                                        ? "bg-black hover:bg-zinc-900 text-white border-none shadow-[0_0_20px_rgba(255,0,255,0.5)] h-10 px-6 overflow-hidden relative"
+                                                        : "border-primary text-primary hover:bg-primary hover:text-white"
+                                                    }
                                                 >
                                                     {downloadingId === reward.id ? (
                                                         <Loader2 className="w-4 h-4 animate-spin" />
                                                     ) : (
-                                                        'ダウンロード'
+                                                        isSpecial ? (
+                                                            <span className="glitch-effect font-retro font-bold tracking-tighter text-lg" data-text="ACCESS">
+                                                                ACCESS
+                                                            </span>
+                                                        ) : 'ダウンロード'
                                                     )}
                                                 </Button>
                                             ) : (
