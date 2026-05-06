@@ -1,25 +1,32 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, ReactNode, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 
 const SYNC_INTERVAL_SEC = 10 * 60 // 10 minutes
 
-interface QuizSyncContextType {
+// 1. 頻繁に更新される「残り時間」用のContext
+interface QuizTimeContextType {
     timeLeft: number
+}
+const QuizTimeContext = createContext<QuizTimeContextType>({
+    timeLeft: SYNC_INTERVAL_SEC
+})
+
+// 2. たまにしか更新されない「同期状態」用のContext
+interface QuizSyncStatusContextType {
     isSyncing: boolean
     hasQueue: boolean
     lastSyncTime: number
 }
-
-const QuizSyncContext = createContext<QuizSyncContextType>({
-    timeLeft: SYNC_INTERVAL_SEC,
+const QuizSyncStatusContext = createContext<QuizSyncStatusContextType>({
     isSyncing: false,
     hasQueue: false,
     lastSyncTime: 0
 })
 
-export const useQuizSync = () => useContext(QuizSyncContext)
+export const useQuizTime = () => useContext(QuizTimeContext)
+export const useQuizSyncStatus = () => useContext(QuizSyncStatusContext)
 
 export default function QuizSyncProvider({ children }: { children: ReactNode }) {
     const [timeLeft, setTimeLeft] = useState(SYNC_INTERVAL_SEC)
@@ -52,7 +59,6 @@ export default function QuizSyncProvider({ children }: { children: ReactNode }) 
         const syncQueue = async () => {
             if (isSyncingRef.current) return
             
-            // Queue確認 (なくてもランキング更新のためにlastSyncTimeは更新する)
             const hasData = checkQueue()
             
             if (hasData) {
@@ -79,8 +85,6 @@ export default function QuizSyncProvider({ children }: { children: ReactNode }) 
                             if (response.ok) {
                                 localStorage.removeItem('quiz_sync_queue')
                                 setHasQueue(false)
-                            } else {
-                                console.error('Failed to sync quiz queue:', await response.text())
                             }
                         }
                     }
@@ -91,19 +95,17 @@ export default function QuizSyncProvider({ children }: { children: ReactNode }) 
                 }
             }
             
-            // データの有無に関わらず、10分間隔でランキングを再取得させるシグナルを送る
             setLastSyncTime(Date.now())
             setTimeLeft(SYNC_INTERVAL_SEC)
         }
 
         checkQueue()
 
-        // 1-second countdown loop
         const timerId = setInterval(() => {
             setTimeLeft((prev) => {
                 if (prev <= 1) {
                     syncQueue()
-                    return SYNC_INTERVAL_SEC // syncQueue will also set it, but this is safe
+                    return SYNC_INTERVAL_SEC
                 }
                 return prev - 1
             })
@@ -126,9 +128,21 @@ export default function QuizSyncProvider({ children }: { children: ReactNode }) 
         }
     }, [])
 
+    const syncStatusValue = useMemo(() => ({
+        isSyncing,
+        hasQueue,
+        lastSyncTime
+    }), [isSyncing, hasQueue, lastSyncTime])
+
+    const timeValue = useMemo(() => ({
+        timeLeft
+    }), [timeLeft])
+
     return (
-        <QuizSyncContext.Provider value={{ timeLeft, isSyncing, hasQueue, lastSyncTime }}>
-            {children}
-        </QuizSyncContext.Provider>
+        <QuizSyncStatusContext.Provider value={syncStatusValue}>
+            <QuizTimeContext.Provider value={timeValue}>
+                {children}
+            </QuizTimeContext.Provider>
+        </QuizSyncStatusContext.Provider>
     )
 }

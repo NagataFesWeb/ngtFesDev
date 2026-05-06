@@ -73,6 +73,12 @@ const MobileNavLinks = () => (
 );
 
 export const Header = () => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 md:px-8">
@@ -94,20 +100,22 @@ export const Header = () => {
         {/* スマホ用ボタンエリア（ログイン＋三本線） */}
         <div className="flex items-center space-x-3 md:hidden">
           <AuthButton />
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
-                <span className="sr-only">Toggle Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[45%] min-w-[200px] p-0">
-              <SheetTitle className="sr-only">メニュー</SheetTitle>
-              <nav className="flex flex-col space-y-5 mt-16 p-8">
-                <MobileNavLinks />
-              </nav>
-            </SheetContent>
-          </Sheet>
+          {isMounted && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                  <span className="sr-only">Toggle Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[45%] min-w-[200px] p-0">
+                <SheetTitle className="sr-only">メニュー</SheetTitle>
+                <nav className="flex flex-col space-y-5 mt-16 p-8">
+                  <MobileNavLinks />
+                </nav>
+              </SheetContent>
+            </Sheet>
+          )}
         </div>
 
         {/* PC用右側エリア（ログインボタンのみ） */}

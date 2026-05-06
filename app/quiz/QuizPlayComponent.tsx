@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,7 @@ interface Question {
     correct_hash: string
 }
 
-export default function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
+function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
     const [loading, setLoading] = useState(true)
     const [questions, setQuestions] = useState<Question[]>([])
     const [currentIndex, setCurrentIndex] = useState(0)
@@ -55,7 +55,7 @@ export default function QuizPlayComponent({ onFinish }: { onFinish: () => void }
                 const CACHE_KEY = 'quiz_questions_cache_v2'
                 const cachedData = localStorage.getItem(CACHE_KEY)
                 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
-                
+
                 if (cachedData) {
                     try {
                         const parsed = JSON.parse(cachedData)
@@ -68,9 +68,6 @@ export default function QuizPlayComponent({ onFinish }: { onFinish: () => void }
                 }
 
                 if (allQuestions.length === 0) {
-                    // This is the ONLY time it fetches from DB during gameplay. 
-                    // If they are completely offline here, they won't be able to play.
-                    // But if they have cache, no DB fetch is made!
                     const { data, error } = await supabase.rpc('get_quiz_questions')
                     if (error) throw error
 
@@ -79,7 +76,7 @@ export default function QuizPlayComponent({ onFinish }: { onFinish: () => void }
                     if (!allQuestions || allQuestions.length === 0) {
                         throw new Error('問題が取得できませんでした')
                     }
-                    
+
                     localStorage.setItem(CACHE_KEY, JSON.stringify({
                         timestamp: Date.now(),
                         questions: allQuestions
@@ -171,7 +168,7 @@ export default function QuizPlayComponent({ onFinish }: { onFinish: () => void }
             queue.score_delta += finalScore
             queue.highest_score = Math.max(queue.highest_score, finalScore)
             queue.play_count += 1
-            
+
             localStorage.setItem('quiz_sync_queue', JSON.stringify(queue))
 
             // Update local user stats for optimistic UI
@@ -191,7 +188,7 @@ export default function QuizPlayComponent({ onFinish }: { onFinish: () => void }
                 highest_score: newHighestScore,
                 play_count: newPlayCount
             }
-            
+
             localStorage.setItem('quiz_user_stats', JSON.stringify(newStats))
 
             setResultData({
@@ -320,8 +317,8 @@ export default function QuizPlayComponent({ onFinish }: { onFinish: () => void }
 
                 {isAnswered && (
                     <CardFooter className="pt-2 border-t bg-muted/20">
-                        <Button 
-                            className="ml-auto font-bold px-8 h-12" 
+                        <Button
+                            className="ml-auto font-bold px-8 h-12"
                             onClick={handleNextQuestion}
                         >
                             {currentIndex < questions.length - 1 ? '次の問題へ' : '結果を見る'}
@@ -329,7 +326,7 @@ export default function QuizPlayComponent({ onFinish }: { onFinish: () => void }
                     </CardFooter>
                 )}
             </Card>
-            
+
             <div className="text-center">
                 <Button variant="ghost" className="text-muted-foreground" onClick={onFinish} disabled={isSubmitting}>
                     クイズを中断して戻る
@@ -338,3 +335,5 @@ export default function QuizPlayComponent({ onFinish }: { onFinish: () => void }
         </div>
     )
 }
+
+export default memo(QuizPlayComponent);
