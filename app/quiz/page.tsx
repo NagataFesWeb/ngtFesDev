@@ -10,7 +10,6 @@ import QuizPlayComponent from './QuizPlayComponent'
 import { useQuizTime, useQuizSyncStatus } from './QuizSyncProvider'
 
 // 秒単位のカウントダウンのみを表示するコンポーネント
-// 1秒ごとに更新される useQuizTime() をここで使うことで、再レンダリングをこのコンポーネントに封じ込める
 const SyncTimerDisplay = memo(function SyncTimerDisplay() {
     const { timeLeft } = useQuizTime()
     const { isSyncing, lastSyncTime } = useQuizSyncStatus()
@@ -67,20 +66,151 @@ export default function QuizDashboardPage() {
     const [isPlaying, setIsPlaying] = useState(false)
     const [isFetchingRanking, setIsFetchingRanking] = useState(false)
     const [hasInitiallyFetched, setHasInitiallyFetched] = useState(false)
+    const [refreshCooldown, setRefreshCooldown] = useState(0)
 
-    // 10分に一度しか変わらない StatusContext のみを参照する
-    // これにより、カウントダウン（timeLeft）による1秒おきの再レンダリングを回避する
-    const { lastSyncTime } = useQuizSyncStatus()
+    const { lastSyncTime, triggerSync } = useQuizSyncStatus()
 
-    // 初回マウント時のみリロード判定を行う
-    // performance API の結果はリロード後ずっと残るため、ここで一度だけ確定させる
     const isInitialReload = useMemo(() => {
         if (typeof window === 'undefined') return false
         const entries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
         return entries.length > 0 && entries[0].type === 'reload'
     }, [])
 
-    // 0. 初期化：キャッシュから読み込んで表示
+    const fetchData = async (force = false) => {
+        if (isPlaying) return;
+
+        const CACHE_TTL = 300000 // 5分
+        const now = Date.now()
+
+        const rankCacheStr = localStorage.getItem('quiz_ranking_cache')
+        const statsCacheStr = localStorage.getItem('quiz_user_stats')
+        const rewardsCacheStr = localStorage.getItem('quiz_rewards_cache')
+        const enabledCacheStr = localStorage.getItem('quiz_enabled_cache_v2')
+
+        let needsRanking = true
+        let needsStats = true
+        let needsRewards = true
+        let needsEnabled = true
+
+        const shouldForceFetch = (isInitialReload && !hasInitiallyFetched) || force
+
+        if (!shouldForceFetch) {
+            if (rankCacheStr) {
+                const { timestamp, data } = JSON.parse(rankCacheStr)
+                if (now - timestamp < CACHE_TTL) {
+                    setRanking(data)
+                    needsRanking = false
+                }
+            }
+            if (statsCacheStr) {
+                const s = JSON.parse(statsCacheStr)
+                if (!s.timestamp || now - s.timestamp < CACHE_TTL) {
+                    setStats(s)
+                    needsStats = false
+                }
+            }
+            if (rewardsCacheStr) {
+                const { timestamp } = JSON.parse(rewardsCacheStr)
+                if (now - timestamp < 3600000) needsRewards = false
+            }
+            if (enabledCacheStr) {
+                const { timestamp, value } = JSON.parse(enabledCacheStr)
+                if (now - timestamp < CACHE_TTL) {
+                    setIsEnabled(value)
+                    needsEnabled = false
+                }
+            }
+        }
+
+        if (!shouldForceFetch && !needsRanking && !needsStats && !needsRewards && !needsEnabled) {
+            setLoading(false)
+            setHasInitiallyFetched(true)
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (!session) router.push('/login?redirect=/quiz')
+            })
+            return
+        }
+
+        setIsFetchingRanking(true)
+
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+            router.push('/login?redirect=/quiz')
+            return
+        }
+
+        const promises: any[] = []
+        const promiseKeys: string[] = []
+
+        if (needsRanking) {
+            promises.push(supabase.rpc('get_quiz_ranking'))
+            promiseKeys.push('ranking')
+        }
+        if (needsStats) {
+            promises.push(supabase.from('quiz_scores').select('total_score, highest_score, play_count').eq('user_id', session.user.id).maybeSingle())
+            promiseKeys.push('stats')
+        }
+        if (needsRewards) {
+            promises.push(supabase.from('quiz_rewards').select('*').order('required_score', { ascending: true }))
+            promiseKeys.push('rewards')
+        }
+        if (needsEnabled) {
+            promises.push(supabase.from('system_settings').select('value').eq('key', 'quiz_enabled').maybeSingle())
+            promiseKeys.push('enabled')
+        }
+
+        if (promises.length > 0) {
+            const results = await Promise.all(promises)
+            results.forEach((res, idx) => {
+                const key = promiseKeys[idx]
+                if (res.error) return
+                if (key === 'ranking') {
+                    setRanking(res.data)
+                    localStorage.setItem('quiz_ranking_cache', JSON.stringify({ timestamp: now, data: res.data }))
+                } else if (key === 'stats') {
+                    const dbStats = res.data || { total_score: 0, highest_score: 0, play_count: 0 }
+                    const statsToSave = { ...dbStats, timestamp: now }
+                    setStats(statsToSave)
+                    localStorage.setItem('quiz_user_stats', JSON.stringify(statsToSave))
+                } else if (key === 'rewards') {
+                    const rData = res.data
+                    setRewards(rData)
+                    localStorage.setItem('quiz_rewards_cache', JSON.stringify({ timestamp: now, rewards: rData }))
+                } else if (key === 'enabled') {
+                    const val = (res.data?.value === true || res.data?.value === 'true')
+                    setIsEnabled(val)
+                    localStorage.setItem('quiz_enabled_cache_v2', JSON.stringify({ timestamp: now, value: val }))
+                    localStorage.setItem('quiz_enabled_cache', String(val))
+                }
+            })
+        }
+
+        setLoading(false)
+        setIsFetchingRanking(false)
+        setHasInitiallyFetched(true)
+    }
+
+    const handleManualRefresh = async () => {
+        if (refreshCooldown > 0 || isFetchingRanking) return
+        
+        // 先に未送信スコアを同期する
+        await triggerSync()
+        
+        // その後に最新データを取得
+        fetchData(true)
+        setRefreshCooldown(10)
+        const timer = setInterval(() => {
+            setRefreshCooldown(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer)
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+    }
+
+    // 0. 初期ロード
     useEffect(() => {
         const statsCache = localStorage.getItem('quiz_user_stats')
         if (statsCache) setStats(JSON.parse(statsCache))
@@ -104,130 +234,8 @@ export default function QuizDashboardPage() {
     }, [])
 
     useEffect(() => {
-        const fetchData = async () => {
-            if (isPlaying) return;
-
-            const CACHE_TTL = 300000 // 5分
-            const now = Date.now()
-
-            // --- 徹底的なキャッシュガード ---
-            const rankCacheStr = localStorage.getItem('quiz_ranking_cache')
-            const statsCacheStr = localStorage.getItem('quiz_user_stats')
-            const rewardsCacheStr = localStorage.getItem('quiz_rewards_cache')
-            const enabledCacheStr = localStorage.getItem('quiz_enabled_cache_v2')
-
-            let needsRanking = true
-            let needsStats = true
-            let needsRewards = true
-            let needsEnabled = true
-
-            // 強制取得すべきか判定：リロードかつ、このセッションでまだ一度も強制取得していない場合
-            const shouldForceFetch = isInitialReload && !hasInitiallyFetched
-
-            // 強制取得時以外はキャッシュを厳密にチェック
-            if (!shouldForceFetch) {
-                if (rankCacheStr) {
-                    const { timestamp, data } = JSON.parse(rankCacheStr)
-                    if (now - timestamp < CACHE_TTL) {
-                        setRanking(data)
-                        needsRanking = false
-                    }
-                }
-                if (statsCacheStr) {
-                    const s = JSON.parse(statsCacheStr)
-                    if (!s.timestamp || now - s.timestamp < CACHE_TTL) {
-                        setStats(s)
-                        needsStats = false
-                    }
-                }
-                if (rewardsCacheStr) {
-                    const { timestamp } = JSON.parse(rewardsCacheStr)
-                    if (now - timestamp < 3600000) {
-                        needsRewards = false
-                    }
-                }
-                if (enabledCacheStr) {
-                    const { timestamp, value } = JSON.parse(enabledCacheStr)
-                    if (now - timestamp < CACHE_TTL) {
-                        setIsEnabled(value)
-                        needsEnabled = false
-                    }
-                }
-            }
-
-            // 全部有効かつ強制取得の必要もないなら早期終了
-            if (!shouldForceFetch && !needsRanking && !needsStats && !needsRewards && !needsEnabled) {
-                setLoading(false)
-                setHasInitiallyFetched(true)
-                
-                // キャッシュ有効時でもバックグラウンドでセッション確認（期限切れ対策）
-                supabase.auth.getSession().then(({ data: { session } }) => {
-                    if (!session) router.push('/login?redirect=/quiz')
-                })
-                return
-            }
-
-            setIsFetchingRanking(true)
-
-            // ここで初めて auth を呼ぶ（必要な時だけ）
-            const { data: { session } } = await supabase.auth.getSession()
-            if (!session) {
-                router.push('/login?redirect=/quiz')
-                return
-            }
-
-            const promises: any[] = []
-            const promiseKeys: string[] = []
-
-            if (needsRanking) {
-                promises.push(supabase.rpc('get_quiz_ranking'))
-                promiseKeys.push('ranking')
-            }
-            if (needsStats) {
-                promises.push(supabase.from('quiz_scores').select('total_score, highest_score, play_count').eq('user_id', session.user.id).maybeSingle())
-                promiseKeys.push('stats')
-            }
-            if (needsRewards) {
-                promises.push(supabase.from('quiz_rewards').select('*').order('required_score', { ascending: true }))
-                promiseKeys.push('rewards')
-            }
-            if (needsEnabled) {
-                promises.push(supabase.from('system_settings').select('value').eq('key', 'quiz_enabled').maybeSingle())
-                promiseKeys.push('enabled')
-            }
-
-            if (promises.length > 0) {
-                const results = await Promise.all(promises)
-                results.forEach((res, idx) => {
-                    const key = promiseKeys[idx]
-                    if (res.error) return
-                    if (key === 'ranking') {
-                        setRanking(res.data)
-                        localStorage.setItem('quiz_ranking_cache', JSON.stringify({ timestamp: now, data: res.data }))
-                    } else if (key === 'stats') {
-                        const dbStats = res.data || { total_score: 0, highest_score: 0, play_count: 0 }
-                        const statsToSave = { ...dbStats, timestamp: now }
-                        setStats(statsToSave)
-                        localStorage.setItem('quiz_user_stats', JSON.stringify(statsToSave))
-                    } else if (key === 'rewards') {
-                        setRewards(res.data)
-                        localStorage.setItem('quiz_rewards_cache', JSON.stringify({ timestamp: now, rewards: res.data }))
-                    } else if (key === 'enabled') {
-                        const val = (res.data?.value === true || res.data?.value === 'true')
-                        setIsEnabled(val)
-                        localStorage.setItem('quiz_enabled_cache_v2', JSON.stringify({ timestamp: now, value: val }))
-                        localStorage.setItem('quiz_enabled_cache', String(val))
-                    }
-                })
-            }
-
-            setLoading(false)
-            setIsFetchingRanking(false)
-            setHasInitiallyFetched(true)
-        }
-
         fetchData()
-    }, [router, lastSyncTime, isPlaying])
+    }, [lastSyncTime, isPlaying])
 
     useEffect(() => {
         const handlePopState = () => {
@@ -289,11 +297,11 @@ export default function QuizDashboardPage() {
             setDownloadingId(rewardId)
             const { data, error } = await supabase.rpc('get_quiz_reward_url', { p_reward_id: rewardId })
 
-            if (error || !data || (data as { signed_url: string }[]).length === 0) {
+            if (error || !data || (data as any[]).length === 0) {
                 throw new Error('未達成またはエラーが発生しました')
             }
 
-            const { signed_url: path } = (data as { signed_url: string }[])[0]
+            const { signed_url: path } = (data as any[])[0]
             const { data: signData, error: signError } = await supabase.storage
                 .from('quiz-rewards')
                 .createSignedUrl(path, 3600)
@@ -351,7 +359,6 @@ export default function QuizDashboardPage() {
 
                     {rewards && (
                         (() => {
-                            // 未達成かつ 'hidden' を含まない次の報酬を探す
                             const nextPublicReward = rewards.find(r =>
                                 currentStats.total_score < r.required_score &&
                                 !r.title_name.toLowerCase().includes('hidden')
@@ -364,8 +371,6 @@ export default function QuizDashboardPage() {
                                     </p>
                                 )
                             }
-
-                            // 表向きの称号を全て達成している場合
                             return <p className="text-xs text-yellow-500 font-bold">全ての称号を達成しました！</p>
                         })()
                     )}
@@ -376,22 +381,37 @@ export default function QuizDashboardPage() {
                 <div className="flex items-center justify-between px-2">
                     <div className="flex items-center gap-2">
                         <Trophy className="w-5 h-5 text-yellow-500" />
-                        <h2 className="text-xl font-bold">ランキング（上位3名）</h2>
+                        <h2 className="text-xl font-bold">ランキング</h2>
                     </div>
-                    <div className="text-xs font-medium text-muted-foreground flex flex-col items-end gap-1">
-                        {isFetchingRanking ? (
-                            <div className="flex items-center gap-1.5">
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
-                                <span className="text-primary">更新中...</span>
-                            </div>
-                        ) : (
-                            <SyncTimerDisplay />
-                        )}
+                    <div className="flex items-center gap-3">
+                        <div className="text-xs font-medium text-muted-foreground flex flex-col items-end gap-0.5">
+                            {isFetchingRanking ? (
+                                <div className="flex items-center gap-1.5">
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
+                                    <span className="text-primary text-[10px]">更新中...</span>
+                                </div>
+                            ) : (
+                                <SyncTimerDisplay />
+                            )}
+                        </div>
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8 rounded-full border-primary/20 hover:bg-primary/10 relative"
+                            onClick={handleManualRefresh}
+                            disabled={refreshCooldown > 0 || isFetchingRanking}
+                        >
+                            {refreshCooldown > 0 ? (
+                                <span className="text-[10px] font-bold text-primary">{refreshCooldown}</span>
+                            ) : (
+                                <RefreshCw className={`w-4 h-4 text-primary ${isFetchingRanking ? 'animate-spin' : ''}`} />
+                            )}
+                        </Button>
                     </div>
                 </div>
                 {ranking && ranking.length > 0 && (
                     <div className="grid gap-3">
-                        {ranking.map((row, idx) => {
+                        {ranking.slice(0, 3).map((row, idx) => {
                             const userRank = getRank(row.total_score)
                             const UserRankIcon = userRank.icon
 
@@ -409,7 +429,7 @@ export default function QuizDashboardPage() {
                                         <div className="flex-1">
                                             <p className="font-bold leading-tight">{row.display_name}</p>
                                             <div className="flex gap-3 mt-1 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                                                <span>1回最高: <strong>{row.highest_score ?? 0}</strong></span>
+                                                <span>最高: <strong>{row.highest_score ?? 0}</strong></span>
                                                 <span>挑戦: <strong>{row.play_count ?? 0}</strong>回</span>
                                             </div>
                                         </div>
@@ -437,13 +457,11 @@ export default function QuizDashboardPage() {
                             const isSecret = reward.title_name.toLowerCase().includes('hidden')
                             if (isSecret && !isUnlocked) return null
 
-                            const isNextToUnlock = !isUnlocked && (index === 0 || currentStats.total_score >= rewards[index - 1].required_score)
-
+                            const isNextToUnlock = !isUnlocked && (index === 0 || (rewards[index - 1] && currentStats.total_score >= rewards[index - 1].required_score))
                             const isSpecial = reward.id === 6
                             const rewardRank = getRank(reward.required_score)
                             const RewardIcon = rewardRank.icon
 
-                            // 特殊なスタイリング（ID 6のみ）
                             const cardClass = !isUnlocked
                                 ? "opacity-60 grayscale bg-muted/30"
                                 : isSpecial

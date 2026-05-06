@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useRef, ReactNode, useMemo } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, ReactNode, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 
 const SYNC_INTERVAL_SEC = 10 * 60 // 10 minutes
@@ -18,11 +18,13 @@ interface QuizSyncStatusContextType {
     isSyncing: boolean
     hasQueue: boolean
     lastSyncTime: number
+    triggerSync: () => Promise<void>
 }
 const QuizSyncStatusContext = createContext<QuizSyncStatusContextType>({
     isSyncing: false,
     hasQueue: false,
-    lastSyncTime: 0
+    lastSyncTime: 0,
+    triggerSync: async () => {}
 })
 
 export const useQuizTime = () => useContext(QuizTimeContext)
@@ -39,66 +41,70 @@ export default function QuizSyncProvider({ children }: { children: ReactNode }) 
         isSyncingRef.current = isSyncing
     }, [isSyncing])
 
-    useEffect(() => {
-        const checkQueue = () => {
-            const queueStr = localStorage.getItem('quiz_sync_queue')
-            if (!queueStr) {
-                setHasQueue(false)
-                return false
-            }
-            try {
-                const queue = JSON.parse(queueStr)
-                const hasData = queue.play_count > 0 || queue.score_delta > 0
-                setHasQueue(hasData)
-                return hasData
-            } catch {
-                return false
-            }
+    const checkQueue = useCallback(() => {
+        const queueStr = localStorage.getItem('quiz_sync_queue')
+        if (!queueStr) {
+            setHasQueue(false)
+            return false
         }
+        try {
+            const queue = JSON.parse(queueStr)
+            const hasData = queue.play_count > 0 || queue.score_delta > 0
+            setHasQueue(hasData)
+            return hasData
+        } catch {
+            return false
+        }
+    }, [])
 
-        const syncQueue = async () => {
-            if (isSyncingRef.current) return
-            
-            const hasData = checkQueue()
-            
-            if (hasData) {
-                setIsSyncing(true)
-                try {
-                    const queueStr = localStorage.getItem('quiz_sync_queue')
-                    if (queueStr) {
-                        const queue = JSON.parse(queueStr)
-                        const { data: { session } } = await supabase.auth.getSession()
-                        if (session) {
-                            const response = await fetch('/api/quiz/submit', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${session.access_token}`
-                                },
-                                body: JSON.stringify({
-                                    score_delta: queue.score_delta,
-                                    highest_score: queue.highest_score,
-                                    play_count: queue.play_count
-                                })
+    const syncQueue = useCallback(async () => {
+        if (isSyncingRef.current) return
+        
+        const hasData = checkQueue()
+        
+        if (hasData) {
+            setIsSyncing(true)
+            try {
+                const queueStr = localStorage.getItem('quiz_sync_queue')
+                if (queueStr) {
+                    const queue = JSON.parse(queueStr)
+                    const { data: { session } } = await supabase.auth.getSession()
+                    if (session) {
+                        const response = await fetch('/api/quiz/submit', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${session.access_token}`
+                            },
+                            body: JSON.stringify({
+                                score_delta: queue.score_delta,
+                                highest_score: queue.highest_score,
+                                play_count: queue.play_count
                             })
+                        })
 
-                            if (response.ok) {
-                                localStorage.removeItem('quiz_sync_queue')
-                                setHasQueue(false)
-                            }
+                        if (response.ok) {
+                            localStorage.removeItem('quiz_sync_queue')
+                            setHasQueue(false)
                         }
                     }
-                } catch (err) {
-                    console.error('Error in quiz sync:', err)
-                } finally {
-                    setIsSyncing(false)
                 }
+            } catch (err) {
+                console.error('Error in quiz sync:', err)
+            } finally {
+                setIsSyncing(false)
             }
-            
-            setLastSyncTime(Date.now())
-            setTimeLeft(SYNC_INTERVAL_SEC)
         }
+        
+        setLastSyncTime(Date.now())
+        setTimeLeft(SYNC_INTERVAL_SEC)
+    }, [checkQueue])
 
+    const triggerSync = useCallback(async () => {
+        await syncQueue()
+    }, [syncQueue])
+
+    useEffect(() => {
         checkQueue()
 
         const timerId = setInterval(() => {
@@ -112,27 +118,40 @@ export default function QuizSyncProvider({ children }: { children: ReactNode }) 
             checkQueue()
         }, 1000)
 
-        const handleBeforeUnload = () => {
-            syncQueue()
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            const queueStr = localStorage.getItem('quiz_sync_queue')
+            if (queueStr) {
+                try {
+                    const queue = JSON.parse(queueStr)
+                    if (queue.play_count > 0 || queue.score_delta > 0) {
+                        e.preventDefault()
+                        e.returnValue = ''
+                    }
+                } catch {}
+            }
         }
         window.addEventListener('beforeunload', handleBeforeUnload)
-        window.addEventListener('visibilitychange', () => {
+
+        const handleVisibilityChange = () => {
             if (document.visibilityState === 'hidden') {
                 syncQueue()
             }
-        })
+        }
+        window.addEventListener('visibilitychange', handleVisibilityChange)
 
         return () => {
             clearInterval(timerId)
             window.removeEventListener('beforeunload', handleBeforeUnload)
+            window.removeEventListener('visibilitychange', handleVisibilityChange)
         }
-    }, [])
+    }, [checkQueue, syncQueue])
 
     const syncStatusValue = useMemo(() => ({
         isSyncing,
         hasQueue,
-        lastSyncTime
-    }), [isSyncing, hasQueue, lastSyncTime])
+        lastSyncTime,
+        triggerSync
+    }), [isSyncing, hasQueue, lastSyncTime, triggerSync])
 
     const timeValue = useMemo(() => ({
         timeLeft

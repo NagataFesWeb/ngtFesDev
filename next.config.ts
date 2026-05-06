@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/storage/v1/object/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'ltumkjnkrhrkucfxeynj.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/**',
+      },
     ],
   },
   // Allow access from local network (LAN) IP
