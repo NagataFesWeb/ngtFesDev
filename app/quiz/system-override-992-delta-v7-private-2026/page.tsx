@@ -148,14 +148,28 @@ export default function SecretPage() {
                     inset: 0;
                 }
                 .idiot-text {
-                    font-size: 100px;
+                    font-size: 80px;
                     font-weight: bold;
                     margin: 10px 0;
                     line-height: 1;
                 }
                 .idiot-subtext {
-                    font-size: 150px;
+                    font-size: 120px;
                     margin: 10px 0;
+                }
+                .idiot-ha {
+                    font-size: 40px;
+                }
+                @media (max-width: 640px) {
+                    .idiot-text {
+                        font-size: 32px;
+                    }
+                    .idiot-subtext {
+                        font-size: 60px;
+                    }
+                    .idiot-ha {
+                        font-size: 20px;
+                    }
                 }
                 .fake-window {
                     position: absolute;
@@ -195,7 +209,7 @@ export default function SecretPage() {
             <div className="idiot-container" style={{ zIndex: 10 }}>
                 <div className="idiot-text">You are an idiot!</div>
                 <div className="idiot-subtext">☺ ☺ ☺</div>
-                <div className="idiot-text" style={{ fontSize: '60px' }}>ha ha ha ha ha ha ha</div>
+                <div className="idiot-text idiot-ha">ha ha ha ha ha ha ha</div>
             </div>
 
             {/* OKボタンをコンテナから分離して配置 */}

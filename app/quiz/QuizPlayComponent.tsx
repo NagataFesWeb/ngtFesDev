@@ -4,8 +4,9 @@ import { useState, useEffect, memo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { Loader2, CheckCircle2, XCircle, Trophy, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
+import confetti from 'canvas-confetti'
 
 interface Question {
     q_id: number
@@ -19,6 +20,7 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
     const [loading, setLoading] = useState(true)
     const [questions, setQuestions] = useState<Question[]>([])
     const [currentIndex, setCurrentIndex] = useState(0)
+    const [isGlitchActive, setIsGlitchActive] = useState(false)
 
     // State for current question
     const [selectedChoice, setSelectedChoice] = useState<number | null>(null)
@@ -33,6 +35,8 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
     // Submit state
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [resultData, setResultData] = useState<{ score: number; total_score: number; highest_score: number; play_count: number } | null>(null)
+    const [isFirstFullScore, setIsFirstFullScore] = useState(false)
+    const [unlockedRewards, setUnlockedRewards] = useState<any[]>([])
 
     useEffect(() => {
         const initQuiz = async () => {
@@ -81,6 +85,33 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
                         timestamp: Date.now(),
                         questions: allQuestions
                     }))
+
+                    // Cache rewards only if not already cached and fresh
+                    const rCache = localStorage.getItem('quiz_rewards_cache')
+                    let needsRewardsFetch = true
+                    if (rCache) {
+                        const parsed = JSON.parse(rCache)
+                        if (Date.now() - parsed.timestamp < 3600000) needsRewardsFetch = false
+                    }
+
+                    if (needsRewardsFetch) {
+                        const { data: rewardData } = await supabase.from('quiz_rewards').select('*').order('required_score', { ascending: true })
+                        if (rewardData) {
+                            localStorage.setItem('quiz_rewards_cache', JSON.stringify({
+                                timestamp: Date.now(),
+                                rewards: rewardData
+                            }))
+                        }
+                    }
+                }
+
+                // 2.5 Check for 100th play glitch (Current play count 99 means this will be 100th)
+                const storedStatsStr = localStorage.getItem('quiz_user_stats')
+                if (storedStatsStr) {
+                    const stats = JSON.parse(storedStatsStr)
+                    if (stats.play_count === 99) {
+                        setIsGlitchActive(true)
+                    }
                 }
 
                 // Shuffle and pick 10
@@ -110,6 +141,30 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
         return hashHex
     }
 
+    // 音声エフェクトのプリロード
+    useEffect(() => {
+        const correctSound = new Audio('/Quiz_correctSound.mp3')
+        correctSound.load()
+        // window オブジェクトに保持してどこからでもアクセスできるようにするか、refを使う
+        ;(window as any)._quizCorrectSound = correctSound
+    }, [])
+
+    // 祝福の紙吹雪を飛ばす共通関数
+    const fireConfetti = () => {
+        const duration = 5 * 1000
+        const animationEnd = Date.now() + duration
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 }
+        const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min
+
+        const interval: any = setInterval(function() {
+            const timeLeft = animationEnd - Date.now()
+            if (timeLeft <= 0) return clearInterval(interval)
+            const particleCount = 50 * (timeLeft / duration)
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }))
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }))
+        }, 250)
+    }
+
     const handleAnswer = async (index: number) => {
         if (isAnswered || isWaiting) return
 
@@ -131,10 +186,14 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
         const correct = actualCorrectIdx === index
         setIsCorrect(correct)
 
-        let newScore = score
         if (correct) {
-            newScore = score + 1
-            setScore(newScore)
+            setScore(prev => prev + 1)
+            // 正解音を再生
+            const sound = (window as any)._quizCorrectSound
+            if (sound) {
+                sound.currentTime = 0
+                sound.play().catch(e => console.warn('Audio play failed:', e))
+            }
         }
 
         setIsWaiting(false)
@@ -186,7 +245,28 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
             const newStats = {
                 total_score: newTotalScore,
                 highest_score: newHighestScore,
-                play_count: newPlayCount
+                play_count: newPlayCount,
+                timestamp: Date.now()
+            }
+
+            const isFull = finalScore === 10 && currentStats.highest_score < 10
+            setIsFirstFullScore(isFull)
+            
+            // 3. 称号開放の判定 (ローカルキャッシュを使用)
+            const cachedRewardsStr = localStorage.getItem('quiz_rewards_cache')
+            if (cachedRewardsStr) {
+                const { rewards: allRewards } = JSON.parse(cachedRewardsStr)
+                const newlyUnlocked = allRewards.filter((r: any) => 
+                    currentStats.total_score < r.required_score && newTotalScore >= r.required_score
+                )
+                if (newlyUnlocked.length > 0) {
+                    setUnlockedRewards(newlyUnlocked)
+                    if (!isFull) fireConfetti()
+                }
+            }
+
+            if (isFull) {
+                fireConfetti()
             }
 
             localStorage.setItem('quiz_user_stats', JSON.stringify(newStats))
@@ -234,6 +314,26 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
                                     <p className="flex justify-between"><span>これまでの最高記録:</span> <strong>{resultData.highest_score} 点</strong></p>
                                     <p className="flex justify-between"><span>プレイ回数:</span> <strong>{resultData.play_count} 回</strong></p>
                                 </div>
+                                {isFirstFullScore && (
+                                    <div className="mt-4 p-4 bg-yellow-500/10 border-2 border-yellow-500 rounded-lg animate-bounce">
+                                        <div className="flex items-center justify-center gap-2 text-yellow-600 dark:text-yellow-400 font-bold">
+                                            <Trophy className="w-5 h-5" />
+                                            <span>祝！初満点達成！</span>
+                                            <Sparkles className="w-5 h-5" />
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-1 text-center">素晴らしい知識です！おめでとうございます！</p>
+                                    </div>
+                                )}
+                                {unlockedRewards.length > 0 && (
+                                    <div className="mt-2 space-y-2">
+                                        {unlockedRewards.map(reward => (
+                                            <div key={reward.id} className="p-3 bg-primary/10 border border-primary/20 rounded-lg animate-in fade-in zoom-in duration-500">
+                                                <p className="text-xs text-primary font-bold uppercase tracking-wider">New Title Unlocked!</p>
+                                                <p className="text-sm font-black text-foreground">称号「{reward.title_name}」を獲得しました！</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </>
                         )}
                     </CardContent>
@@ -257,7 +357,7 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
     }
 
     return (
-        <div className="w-full space-y-6">
+        <div className={`w-full space-y-6 ${isGlitchActive ? 'glitch-active' : ''}`}>
             <div className="flex justify-between items-center text-sm font-medium text-muted-foreground">
                 <span>問題 {currentIndex + 1} / {questions.length}</span>
                 <span>現在のスコア: {score}</span>

@@ -66,79 +66,159 @@ export default function QuizDashboardPage() {
     const [downloadingId, setDownloadingId] = useState<number | null>(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [isFetchingRanking, setIsFetchingRanking] = useState(false)
+    const [hasInitiallyFetched, setHasInitiallyFetched] = useState(false)
 
     // 10分に一度しか変わらない StatusContext のみを参照する
     // これにより、カウントダウン（timeLeft）による1秒おきの再レンダリングを回避する
     const { lastSyncTime } = useQuizSyncStatus()
 
+    // 初回マウント時のみリロード判定を行う
+    // performance API の結果はリロード後ずっと残るため、ここで一度だけ確定させる
+    const isInitialReload = useMemo(() => {
+        if (typeof window === 'undefined') return false
+        const entries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
+        return entries.length > 0 && entries[0].type === 'reload'
+    }, [])
+
+    // 0. 初期化：キャッシュから読み込んで表示
+    useEffect(() => {
+        const statsCache = localStorage.getItem('quiz_user_stats')
+        if (statsCache) setStats(JSON.parse(statsCache))
+
+        const rewardsCache = localStorage.getItem('quiz_rewards_cache')
+        if (rewardsCache) {
+            const parsed = JSON.parse(rewardsCache)
+            setRewards(parsed.rewards || parsed)
+        }
+
+        const enabledCache = localStorage.getItem('quiz_enabled_cache_v2')
+        if (enabledCache) {
+            const { value } = JSON.parse(enabledCache)
+            setIsEnabled(value)
+        }
+
+        const rankCache = localStorage.getItem('quiz_ranking_cache')
+        if (rankCache) setRanking(JSON.parse(rankCache).data)
+
+        if (statsCache) setLoading(false)
+    }, [])
+
     useEffect(() => {
         const fetchData = async () => {
             if (isPlaying) return;
+
+            const CACHE_TTL = 300000 // 5分
+            const now = Date.now()
+
+            // --- 徹底的なキャッシュガード ---
+            const rankCacheStr = localStorage.getItem('quiz_ranking_cache')
+            const statsCacheStr = localStorage.getItem('quiz_user_stats')
+            const rewardsCacheStr = localStorage.getItem('quiz_rewards_cache')
+            const enabledCacheStr = localStorage.getItem('quiz_enabled_cache_v2')
+
+            let needsRanking = true
+            let needsStats = true
+            let needsRewards = true
+            let needsEnabled = true
+
+            // 強制取得すべきか判定：リロードかつ、このセッションでまだ一度も強制取得していない場合
+            const shouldForceFetch = isInitialReload && !hasInitiallyFetched
+
+            // 強制取得時以外はキャッシュを厳密にチェック
+            if (!shouldForceFetch) {
+                if (rankCacheStr) {
+                    const { timestamp, data } = JSON.parse(rankCacheStr)
+                    if (now - timestamp < CACHE_TTL) {
+                        setRanking(data)
+                        needsRanking = false
+                    }
+                }
+                if (statsCacheStr) {
+                    const s = JSON.parse(statsCacheStr)
+                    if (!s.timestamp || now - s.timestamp < CACHE_TTL) {
+                        setStats(s)
+                        needsStats = false
+                    }
+                }
+                if (rewardsCacheStr) {
+                    const { timestamp } = JSON.parse(rewardsCacheStr)
+                    if (now - timestamp < 3600000) {
+                        needsRewards = false
+                    }
+                }
+                if (enabledCacheStr) {
+                    const { timestamp, value } = JSON.parse(enabledCacheStr)
+                    if (now - timestamp < CACHE_TTL) {
+                        setIsEnabled(value)
+                        needsEnabled = false
+                    }
+                }
+            }
+
+            // 全部有効かつ強制取得の必要もないなら早期終了
+            if (!shouldForceFetch && !needsRanking && !needsStats && !needsRewards && !needsEnabled) {
+                setLoading(false)
+                setHasInitiallyFetched(true)
+                return
+            }
+
             setIsFetchingRanking(true)
 
-            // 1. Check Feature Toggle
-            const { data: settings, error: settingsError } = await supabase
-                .from('system_settings')
-                .select('value')
-                .eq('key', 'quiz_enabled')
-                .single()
-
-            if (!settingsError && settings) {
-                const s = settings as { value: boolean | string }
-                const enabled = (s.value === true || s.value === 'true')
-                setIsEnabled(enabled)
-                localStorage.setItem('quiz_enabled_cache', String(enabled))
-            }
-
-            // 2. Fetch Ranking & Rewards
-            type RankingItem = { display_name: string; total_score: number; highest_score: number; play_count: number };
-            type RewardItem = { id: number; required_score: number; title_name: string; storage_path: string };
-            const [rankingRes, rewardsRes] = await Promise.all([
-                supabase.rpc('get_quiz_ranking') as unknown as Promise<{ data: RankingItem[] | null, error: unknown }>,
-                supabase.from('quiz_rewards').select('*').order('required_score', { ascending: true }) as unknown as Promise<{ data: RewardItem[] | null, error: unknown }>
-            ])
-
-            if (!rankingRes.error && rankingRes.data) {
-                setRanking(rankingRes.data)
-            }
-            if (!rewardsRes.error && rewardsRes.data) {
-                setRewards(rewardsRes.data)
-            }
-
-            // 3. Fetch Stats
+            // ここで初めて auth を呼ぶ（必要な時だけ）
             const { data: { session } } = await supabase.auth.getSession()
             if (!session) {
                 router.push('/login?redirect=/quiz')
                 return
             }
 
-            const { data, error } = await supabase
-                .from('quiz_scores')
-                .select('total_score, highest_score, play_count')
-                .eq('user_id', session.user.id)
-                .single()
+            const promises: any[] = []
+            const promiseKeys: string[] = []
 
-            let dbStats = { total_score: 0, highest_score: 0, play_count: 0 }
-            if (!error && data) {
-                dbStats = data as { total_score: number; highest_score: number; play_count: number }
+            if (needsRanking) {
+                promises.push(supabase.rpc('get_quiz_ranking'))
+                promiseKeys.push('ranking')
+            }
+            if (needsStats) {
+                promises.push(supabase.from('quiz_scores').select('total_score, highest_score, play_count').eq('user_id', session.user.id).maybeSingle())
+                promiseKeys.push('stats')
+            }
+            if (needsRewards) {
+                promises.push(supabase.from('quiz_rewards').select('*').order('required_score', { ascending: true }))
+                promiseKeys.push('rewards')
+            }
+            if (needsEnabled) {
+                promises.push(supabase.from('system_settings').select('value').eq('key', 'quiz_enabled').maybeSingle())
+                promiseKeys.push('enabled')
             }
 
-            const queueStr = localStorage.getItem('quiz_sync_queue')
-            if (queueStr) {
-                try {
-                    const queue = JSON.parse(queueStr)
-                    dbStats.total_score += queue.score_delta || 0
-                    dbStats.highest_score = Math.max(dbStats.highest_score, queue.highest_score || 0)
-                    dbStats.play_count += queue.play_count || 0
-                } catch (e) {
-                    console.error('Failed to parse queue', e)
-                }
+            if (promises.length > 0) {
+                const results = await Promise.all(promises)
+                results.forEach((res, idx) => {
+                    const key = promiseKeys[idx]
+                    if (res.error) return
+                    if (key === 'ranking') {
+                        setRanking(res.data)
+                        localStorage.setItem('quiz_ranking_cache', JSON.stringify({ timestamp: now, data: res.data }))
+                    } else if (key === 'stats') {
+                        const dbStats = res.data || { total_score: 0, highest_score: 0, play_count: 0 }
+                        const statsToSave = { ...dbStats, timestamp: now }
+                        setStats(statsToSave)
+                        localStorage.setItem('quiz_user_stats', JSON.stringify(statsToSave))
+                    } else if (key === 'rewards') {
+                        setRewards(res.data)
+                        localStorage.setItem('quiz_rewards_cache', JSON.stringify({ timestamp: now, rewards: res.data }))
+                    } else if (key === 'enabled') {
+                        const val = (res.data?.value === true || res.data?.value === 'true')
+                        setIsEnabled(val)
+                        localStorage.setItem('quiz_enabled_cache_v2', JSON.stringify({ timestamp: now, value: val }))
+                        localStorage.setItem('quiz_enabled_cache', String(val))
+                    }
+                })
             }
 
-            localStorage.setItem('quiz_user_stats', JSON.stringify(dbStats))
-            setStats(dbStats)
             setLoading(false)
             setIsFetchingRanking(false)
+            setHasInitiallyFetched(true)
         }
 
         fetchData()
@@ -257,7 +337,9 @@ export default function QuizDashboardPage() {
                     <div className={`p-4 rounded-full bg-background shadow-md ${rank.color}`}>
                         <RankIcon className="w-16 h-16" />
                     </div>
-                    <h2 className={`text-3xl font-black ${rank.color}`}>{rank.name}</h2>
+                    <h2 className={`text-2xl sm:text-3xl font-black break-words leading-tight text-center max-w-full px-2 ${rank.color}`}>
+                        {rank.name}
+                    </h2>
                     <p className="text-sm font-medium">
                         累計正解数: <span className="text-xl mx-1 text-primary">{currentStats.total_score}</span> 問
                     </p>
@@ -365,19 +447,19 @@ export default function QuizDashboardPage() {
 
                             return (
                                 <Card key={reward.id} className={cardClass}>
-                                    <CardContent className="flex items-center p-4">
-                                        <div className={`mr-4 p-2 rounded-full bg-background shadow-sm ${isSpecial && isUnlocked ? "text-magenta-500" : rewardRank.color}`}>
-                                            <RewardIcon className="w-5 h-5" />
+                                    <CardContent className="flex items-center p-2 sm:p-4 gap-2 sm:gap-4">
+                                        <div className={`flex-shrink-0 p-1.5 sm:p-2 rounded-full bg-background shadow-sm ${isSpecial && isUnlocked ? "text-magenta-500" : rewardRank.color}`}>
+                                            <RewardIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                                         </div>
-                                        <div className="flex-1">
-                                            <p className={`font-bold ${isSpecial && isUnlocked ? "text-magenta-600 dark:text-magenta-400 font-retro text-lg tracking-tight" : ""}`}>
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`font-bold leading-tight break-words ${isSpecial && isUnlocked ? "text-magenta-600 dark:text-magenta-400 font-retro text-sm sm:text-lg tracking-tight" : "text-xs sm:text-base"}`}>
                                                 {isUnlocked || isNextToUnlock ? reward.title_name : "？？？"}
                                             </p>
-                                            <p className={`text-[10px] text-muted-foreground uppercase tracking-widest ${isSpecial && isUnlocked ? "font-retro opacity-70" : ""}`}>
+                                            <p className={`text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-widest ${isSpecial && isUnlocked ? "font-retro opacity-70" : ""}`}>
                                                 必要: {reward.required_score}問
                                             </p>
                                         </div>
-                                        <div>
+                                        <div className="flex-shrink-0">
                                             {isUnlocked ? (
                                                 <Button
                                                     size="sm"
@@ -391,22 +473,27 @@ export default function QuizDashboardPage() {
                                                     }}
                                                     disabled={downloadingId === reward.id}
                                                     className={isSpecial
-                                                        ? "bg-black hover:bg-zinc-900 text-white border-none shadow-[0_0_20px_rgba(255,0,255,0.5)] h-10 px-6 overflow-hidden relative"
-                                                        : "border-primary text-primary hover:bg-primary hover:text-white"
+                                                        ? "bg-black hover:bg-zinc-900 text-white border-none shadow-[0_0_15px_rgba(255,0,255,0.4)] h-8 sm:h-10 px-3 sm:px-6 overflow-hidden relative"
+                                                        : "border-primary text-primary hover:bg-primary hover:text-white h-7 sm:h-9 px-2 sm:px-4 text-[10px] sm:text-xs"
                                                     }
                                                 >
                                                     {downloadingId === reward.id ? (
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                                                     ) : (
                                                         isSpecial ? (
-                                                            <span className="glitch-effect font-retro font-bold tracking-tighter text-lg" data-text="ACCESS">
+                                                            <span className="glitch-effect font-retro font-bold tracking-tighter text-xs sm:text-lg" data-text="ACCESS">
                                                                 ACCESS
                                                             </span>
-                                                        ) : 'ダウンロード'
+                                                        ) : (
+                                                            <>
+                                                                <span className="hidden sm:inline">ダウンロード</span>
+                                                                <span className="sm:hidden">DL</span>
+                                                            </>
+                                                        )
                                                     )}
                                                 </Button>
                                             ) : (
-                                                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+                                                <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
                                                     未達成
                                                 </span>
                                             )}
