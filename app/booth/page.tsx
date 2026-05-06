@@ -4,38 +4,20 @@ import { BoothClient } from './BoothClient'
 import { CautionNotes } from '@/components/common/CautionNotes'
 import { PaymentNotes } from '@/components/common/PaymentNotes'
 import { ProjectWithStatus } from '@/components/project/ProjectList'
+import { getProjectListGranular } from '@/lib/projectFetcher'
 
 export const metadata: Metadata = {
     title: '模擬店',
 }
 
-export const revalidate = 60
-
 export default async function BoothPage() {
-    const [
-        { data: projectsWithStatus, error },
-        { data: fpSetting },
-        { data: congestionData }
-    ] = await Promise.all([
-        supabase.rpc('get_projects_with_status'),
-        supabase.from('system_settings').select('value').eq('key', 'fastpass_enabled').single(),
-        supabase.from('congestion').select('project_id, updated_at')
-    ])
-
-    const globalFastpassEnabled = fpSetting?.value === true || fpSetting?.value === 'true'
-    
-    const initialUpdatedAtMap: Record<string, string> = {}
-    if (congestionData) {
-        congestionData.forEach(c => {
-            if (c.updated_at) initialUpdatedAtMap[c.project_id] = c.updated_at
-        })
-    }
+    const { projectsWithStatus, globalFastpassEnabled, initialUpdatedAtMap, error } = await getProjectListGranular()
 
     if (error) {
         console.error('Error fetching projects:', error)
     }
 
-    const boothProjects = ((projectsWithStatus as ProjectWithStatus[]) || []).filter(
+    const boothProjects = (projectsWithStatus || []).filter(
         p => p.type === 'class' || p.type === 'food'
     )
 

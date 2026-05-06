@@ -53,7 +53,7 @@ export const StageClient = ({ initialProjects }: StageClientProps) => {
 
             <div className="space-y-4">
                 <h2 className="text-xl font-semibold border-b pb-2">タイムテーブル</h2>
-                <div className="w-full aspect-video bg-muted rounded-md border flex items-center justify-center overflow-hidden relative">
+                <div className="w-full max-w-3xl mx-auto aspect-[1447/2039] bg-muted rounded-md border flex items-center justify-center overflow-hidden relative">
                     {!mapLoading && mapUrl ? (
                         <Image
                             src={mapUrl}
