@@ -4,11 +4,18 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
+interface WindowItem {
+    id: number
+    x: number
+    y: number
+    isInverted: boolean
+}
+
 export default function SecretPage() {
     const router = useRouter()
     const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
     const [loading, setLoading] = useState(true)
-    const [windows, setWindows] = useState<{ id: number, x: number, y: number }[]>([])
+    const [windows, setWindows] = useState<WindowItem[]>([])
     const [audioStarted, setAudioStarted] = useState(false)
     const [okClickCount, setOkClickCount] = useState(0)
     // 最初は画面中央付近に配置するための初期値
@@ -45,7 +52,7 @@ export default function SecretPage() {
         setAudioStarted(true)
         const docElm = document.documentElement;
         if (docElm.requestFullscreen) {
-            docElm.requestFullscreen().catch(() => {});
+            docElm.requestFullscreen().catch(() => { });
         } else if ((docElm as any).webkitRequestFullscreen) {
             (docElm as any).webkitRequestFullscreen();
         }
@@ -66,7 +73,7 @@ export default function SecretPage() {
                 if (count < maxWindows) {
                     const isBurst = Math.random() > 0.7
                     const burstSize = isBurst ? Math.floor(Math.random() * 4) + 2 : 1
-                    const newWindows: { id: number, x: number, y: number }[] = []
+                    const newWindows: WindowItem[] = []
                     const baseStartX = Math.random() * (window.innerWidth - 300)
                     const baseStartY = Math.random() * (window.innerHeight - 200)
 
@@ -75,7 +82,8 @@ export default function SecretPage() {
                         newWindows.push({
                             id: Date.now() + Math.random() + i,
                             x: (baseStartX + (i * 30)) % (window.innerWidth - 300),
-                            y: (baseStartY + (i * 30)) % (window.innerHeight - 200)
+                            y: (baseStartY + (i * 30)) % (window.innerHeight - 200),
+                            isInverted: Math.random() > 0.6 // 40%の確率で反転
                         })
                     }
                     setWindows(prev => [...prev, ...newWindows])
@@ -130,7 +138,8 @@ export default function SecretPage() {
             fontFamily: '"Times New Roman", Times, serif',
             position: 'relative'
         }}>
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @keyframes flash {
                     0%, 49% { background-color: white; color: black; }
                     50%, 100% { background-color: black; color: white; }
@@ -204,8 +213,11 @@ export default function SecretPage() {
                     text-align: center;
                     font-size: 14px;
                 }
+                .fake-window.inverted {
+                    filter: invert(1);
+                }
             `}} />
-            
+
             <div className="idiot-container" style={{ zIndex: 10 }}>
                 <div className="idiot-text">You are an idiot!</div>
                 <div className="idiot-subtext">☺ ☺ ☺</div>
@@ -213,7 +225,7 @@ export default function SecretPage() {
             </div>
 
             {/* OKボタンをコンテナから分離して配置 */}
-            <div style={{ 
+            <div style={{
                 position: 'fixed',
                 left: okPos.x,
                 top: okPos.y,
@@ -221,7 +233,7 @@ export default function SecretPage() {
                 zIndex: 50, // 偽ウィンドウ(100)より下に配置
                 transition: 'all 0.1s ease-out'
             }}>
-                <button 
+                <button
                     onClick={handleOkClick}
                     style={{
                         padding: '10px 30px',
@@ -239,17 +251,17 @@ export default function SecretPage() {
 
             {/* 真の戻るボタン */}
             {audioStarted && (
-                <button 
+                <button
                     onClick={() => router.push('/quiz')}
                     style={{
                         position: 'fixed',
-                        top: '60px',
-                        left: '10px',
-                        zIndex: 2000,
+                        bottom: '10px',
+                        right: '10px',
+                        zIndex: 50, // 偽ウィンドウ(100)やOKボタン(50)の下または同等に配置
                         background: 'transparent',
-                        border: '1px solid #ccc',
-                        color: '#666',
-                        fontSize: '10px',
+                        border: '1px solid #eee',
+                        color: '#999',
+                        fontSize: '9px',
                         padding: '2px 5px',
                         cursor: 'pointer',
                         opacity: 0.5,
@@ -262,13 +274,13 @@ export default function SecretPage() {
 
             {/* ウィンドウ増殖 */}
             {windows.map(win => (
-                <div key={win.id} className="fake-window" style={{ left: win.x, top: win.y }}>
+                <div key={win.id} className={`fake-window ${win.isInverted ? 'inverted' : ''}`} style={{ left: win.x, top: win.y }}>
                     <div className="window-title">
                         <span>Information</span>
                         <span onClick={() => removeWindow(win.id)} style={{ background: '#ccc', color: '#000', width: '14px', height: '14px', textAlign: 'center', lineHeight: '12px', fontSize: '10px', border: '1px solid #000', cursor: 'pointer', userSelect: 'none' }}>x</span>
                     </div>
                     <div className="window-content">
-                        <div style={{ fontSize: '30px', marginBottom: '5px' }}>☺</div>
+                        <div style={{ fontSize: '30px', marginBottom: '5px' }}>☺ ☺ ☺</div>
                         <div>You are an idiot!</div>
                     </div>
                 </div>
