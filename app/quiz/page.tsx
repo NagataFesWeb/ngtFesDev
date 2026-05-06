@@ -159,6 +159,11 @@ export default function QuizDashboardPage() {
             if (!shouldForceFetch && !needsRanking && !needsStats && !needsRewards && !needsEnabled) {
                 setLoading(false)
                 setHasInitiallyFetched(true)
+                
+                // キャッシュ有効時でもバックグラウンドでセッション確認（期限切れ対策）
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                    if (!session) router.push('/login?redirect=/quiz')
+                })
                 return
             }
 

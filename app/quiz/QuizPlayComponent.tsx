@@ -74,34 +74,30 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
                 if (allQuestions.length === 0) {
                     const { data, error } = await supabase.rpc('get_quiz_questions')
                     if (error) throw error
-
                     allQuestions = data as unknown as Question[]
-
-                    if (!allQuestions || allQuestions.length === 0) {
-                        throw new Error('問題が取得できませんでした')
-                    }
+                    if (!allQuestions || allQuestions.length === 0) throw new Error('問題が取得できませんでした')
 
                     localStorage.setItem(CACHE_KEY, JSON.stringify({
                         timestamp: Date.now(),
                         questions: allQuestions
                     }))
+                }
 
-                    // Cache rewards only if not already cached and fresh
-                    const rCache = localStorage.getItem('quiz_rewards_cache')
-                    let needsRewardsFetch = true
-                    if (rCache) {
-                        const parsed = JSON.parse(rCache)
-                        if (Date.now() - parsed.timestamp < 3600000) needsRewardsFetch = false
-                    }
+                // 2.2 Cache rewards (Independent from questions cache)
+                const rCache = localStorage.getItem('quiz_rewards_cache')
+                let needsRewardsFetch = true
+                if (rCache) {
+                    const parsed = JSON.parse(rCache)
+                    if (Date.now() - parsed.timestamp < 3600000) needsRewardsFetch = false
+                }
 
-                    if (needsRewardsFetch) {
-                        const { data: rewardData } = await supabase.from('quiz_rewards').select('*').order('required_score', { ascending: true })
-                        if (rewardData) {
-                            localStorage.setItem('quiz_rewards_cache', JSON.stringify({
-                                timestamp: Date.now(),
-                                rewards: rewardData
-                            }))
-                        }
+                if (needsRewardsFetch) {
+                    const { data: rewardData } = await supabase.from('quiz_rewards').select('*').order('required_score', { ascending: true })
+                    if (rewardData) {
+                        localStorage.setItem('quiz_rewards_cache', JSON.stringify({
+                            timestamp: Date.now(),
+                            rewards: rewardData
+                        }))
                     }
                 }
 
@@ -145,8 +141,8 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
     useEffect(() => {
         const correctSound = new Audio('/Quiz_correctSound.mp3')
         correctSound.load()
-        // window オブジェクトに保持してどこからでもアクセスできるようにするか、refを使う
-        ;(window as any)._quizCorrectSound = correctSound
+            // window オブジェクトに保持してどこからでもアクセスできるようにするか、refを使う
+            ; (window as any)._quizCorrectSound = correctSound
     }, [])
 
     // 祝福の紙吹雪を飛ばす共通関数
@@ -156,7 +152,7 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
         const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 }
         const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min
 
-        const interval: any = setInterval(function() {
+        const interval: any = setInterval(function () {
             const timeLeft = animationEnd - Date.now()
             if (timeLeft <= 0) return clearInterval(interval)
             const particleCount = 50 * (timeLeft / duration)
@@ -192,7 +188,7 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
             const sound = (window as any)._quizCorrectSound
             if (sound) {
                 sound.currentTime = 0
-                sound.play().catch(e => console.warn('Audio play failed:', e))
+                sound.play().catch((e: any) => console.warn('Audio play failed:', e))
             }
         }
 
@@ -251,12 +247,12 @@ function QuizPlayComponent({ onFinish }: { onFinish: () => void }) {
 
             const isFull = finalScore === 10 && currentStats.highest_score < 10
             setIsFirstFullScore(isFull)
-            
+
             // 3. 称号開放の判定 (ローカルキャッシュを使用)
             const cachedRewardsStr = localStorage.getItem('quiz_rewards_cache')
             if (cachedRewardsStr) {
                 const { rewards: allRewards } = JSON.parse(cachedRewardsStr)
-                const newlyUnlocked = allRewards.filter((r: any) => 
+                const newlyUnlocked = allRewards.filter((r: any) =>
                     currentStats.total_score < r.required_score && newTotalScore >= r.required_score
                 )
                 if (newlyUnlocked.length > 0) {
