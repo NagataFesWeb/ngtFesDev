@@ -23,76 +23,76 @@ export default function ThemePage() {
 
         <div className="space-y-28 md:space-y-40">
           {/* Greeting */}
-          <section className="flex flex-col items-center text-center space-y-10">
-            <div className="space-y-6">
-              <p className="text-2xl md:text-3xl font-serif text-muted-foreground tracking-widest">Greeting</p>
-              <h2 className="text-4xl md:text-5xl font-bold tracking-widest text-foreground py-4 drop-shadow-sm">
+          <section className="flex flex-col items-center text-center space-y-8 md:space-y-10">
+            <div className="space-y-4 md:space-y-6">
+              <p className="text-xl md:text-3xl font-serif text-muted-foreground tracking-widest">Greeting</p>
+              <h2 className="text-3xl md:text-5xl font-bold tracking-widest text-foreground py-2 md:py-4 drop-shadow-sm">
                 ご挨拶
               </h2>
             </div>
 
-            <div className="max-w-2xl space-y-8 mt-8">
-              <p className="text-lg md:text-xl leading-[2.5] md:leading-[2.5] text-foreground/90 font-medium">
-                長田生が描く「自由」を体現した模擬店、そして迫力満点のステージの数々。<br />
-                高揚した空気の中で育まれる友情、そして愛。<br />
-                この二日間、この場にいるすべての人が小難しい課題や英単語を忘れ、<br />
-                今しかないこの瞬間を、誰よりも欲張りに楽しみ尽くせるひとときに。<br />
-                そして、文武遊楽、すべてを兼ね備えた長田生のエネルギーで、<br />
+            <div className="max-w-2xl space-y-6 md:space-y-8 mt-4 md:mt-8">
+              <p className="text-base md:text-xl leading-loose md:leading-[2.5] text-foreground/90 font-medium px-2">
+                長田生が描く「自由」を体現した模擬店、そして迫力満点のステージの数々。<br className="hidden md:block" />
+                高揚した空気の中で育まれる友情、そして愛。<br className="hidden md:block" />
+                この二日間、この場にいるすべての人が小難しい課題や英単語を忘れ、<br className="hidden md:block" />
+                今しかないこの瞬間を、誰よりも欲張りに楽しみ尽くせるひとときに。<br className="hidden md:block" />
+                そして、文武遊楽、すべてを兼ね備えた長田生のエネルギーで、<br className="hidden md:block" />
                 この空を、私たちの個性あふれる色彩で塗り替え、最高の一瞬を刻みましょう。
               </p>
-              <p className="text-lg md:text-xl text-muted-foreground text-right pr-4 pt-4">
+              <p className="text-base md:text-xl text-muted-foreground text-right pr-4 pt-2 md:pt-4">
                 第79回文化祭実行委員長　中西 基
               </p>
             </div>
             
-            <div className="pt-12 md:pt-16">
-              <Image src="/1772606843056.jpg" alt="文化祭ロゴ" width={300} height={300} className="w-48 md:w-64 h-auto drop-shadow-lg mx-auto rounded-full object-cover aspect-square" />
+            <div className="pt-8 md:pt-16">
+              <Image src="/1772606843056.jpg" alt="文化祭ロゴ" width={300} height={300} className="w-32 md:w-64 h-auto drop-shadow-lg mx-auto rounded-full object-cover aspect-square" />
             </div>
           </section>
 
           {/* Main Theme */}
-          <section className="flex flex-col items-center text-center space-y-10">
-            <div className="space-y-4">
-              <p className="text-2xl md:text-3xl font-serif text-muted-foreground tracking-widest">Theme</p>
-              <h2 className="text-[5rem] md:text-[8rem] lg:text-[12rem] leading-none limelight tracking-widest text-foreground drop-shadow-sm">
+          <section className="flex flex-col items-center text-center space-y-8 md:space-y-10">
+            <div className="space-y-2 md:space-y-4">
+              <p className="text-xl md:text-3xl font-serif text-muted-foreground tracking-widest">Theme</p>
+              <h2 className="text-6xl md:text-[8rem] lg:text-[12rem] leading-none limelight tracking-widest text-foreground drop-shadow-sm">
                 SOLA
               </h2>
             </div>
             
-            <div className="max-w-2xl space-y-8 mt-8">
-              <p className="text-xl md:text-2xl leading-[2.5] md:leading-[2.5] text-foreground/90 font-medium">
-                ラテン語で「唯一の」という意味を持ち、<br />
-                日本語の空と同音であるこのテーマ<br />
-                には長田にしかできない唯一の、<br />
-                そして長田生の限りない可能性を秘めた<br />
-                そんな文化祭になって欲しいという<br />
+            <div className="max-w-2xl space-y-6 md:space-y-8 mt-4 md:mt-8">
+              <p className="text-base md:text-2xl leading-loose md:leading-[2.5] text-foreground/90 font-medium px-2">
+                ラテン語で「唯一の」という意味を持ち、<br className="hidden md:block" />
+                日本語の空と同音であるこのテーマ<br className="hidden md:block" />
+                には長田にしかできない唯一の、<br className="hidden md:block" />
+                そして長田生の限りない可能性を秘めた<br className="hidden md:block" />
+                そんな文化祭になって欲しいという<br className="hidden md:block" />
                 願いを込めています。
               </p>
-              <p className="text-lg md:text-xl text-muted-foreground text-right pr-4 pt-4">
+              <p className="text-base md:text-xl text-muted-foreground text-right pr-4 pt-2 md:pt-4">
                 テーマ考案者　3年 定岡咲楽
               </p>
             </div>
           </section>
 
           {/* Sub Theme */}
-          <section className="flex flex-col items-center text-center space-y-10">
-             <div className="space-y-6">
-              <p className="text-2xl md:text-3xl font-serif text-muted-foreground tracking-widest">Subtheme</p>
-              <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-widest text-foreground py-4 drop-shadow-sm">
+          <section className="flex flex-col items-center text-center space-y-8 md:space-y-10">
+             <div className="space-y-4 md:space-y-6">
+              <p className="text-xl md:text-3xl font-serif text-muted-foreground tracking-widest">Subtheme</p>
+              <h2 className="text-3xl md:text-6xl lg:text-7xl font-bold tracking-widest text-foreground py-2 md:py-4 drop-shadow-sm">
                 この空、長田色
               </h2>
             </div>
 
-            <div className="max-w-2xl space-y-8 mt-8">
-              <p className="text-xl md:text-2xl leading-[2.5] md:leading-[2.5] text-foreground/90 font-medium">
-                この空が唯一無二であるように、<br />
-                長田生一人ひとりが特別な存在だ<br />
-                という思いを込めました。普段は意識<br />
-                しない個性やつながりを大切にし、<br />
-                その色を重ねて、長田ならではの景色をつくる<br />
+            <div className="max-w-2xl space-y-6 md:space-y-8 mt-4 md:mt-8">
+              <p className="text-base md:text-2xl leading-loose md:leading-[2.5] text-foreground/90 font-medium px-2">
+                この空が唯一無二であるように、<br className="hidden md:block" />
+                長田生一人ひとりが特別な存在だ<br className="hidden md:block" />
+                という思いを込めました。普段は意識<br className="hidden md:block" />
+                しない個性やつながりを大切にし、<br className="hidden md:block" />
+                その色を重ねて、長田ならではの景色をつくる<br className="hidden md:block" />
                 文化祭にしたいです。
               </p>
-              <p className="text-lg md:text-xl text-muted-foreground text-right pr-4 pt-4">
+              <p className="text-base md:text-xl text-muted-foreground text-right pr-4 pt-2 md:pt-4">
                 サブテーマ考案者　2年 榊原かなで
               </p>
             </div>
