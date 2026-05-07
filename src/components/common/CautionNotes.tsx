@@ -73,7 +73,7 @@ export function CautionNotes() {
                             <li className="flex items-start">
                                 <AlertCircle className="mr-3 mt-1 h-5 w-5 text-primary shrink-0" />
                                 <span className="leading-relaxed">
-                                    食堂はau PAYの使用はできません。<span className="font-medium text-destructive">現金、金券のみ使用可能</span>です。
+                                    食堂はau PAYの使用はできません。<span className="font-medium text-destructive">現金のみ使用可能</span>です。
                                 </span>
                             </li>
                         </ul>
