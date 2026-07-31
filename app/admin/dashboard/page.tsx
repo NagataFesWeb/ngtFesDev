@@ -45,6 +45,14 @@ interface SystemSetting {
     description: string;
 }
 
+interface OperationLog {
+    log_id: string;
+    operator_id: string | null;
+    action: string;
+    details: Record<string, unknown> | null;
+    performed_at: string;
+}
+
 // Slot Editor Component (Controlled Input)
 function SlotCapacityEditor({ slot, onUpdate }: { slot: Slot, onUpdate: (id: string, val: number) => void }) {
     const [value, setValue] = useState(slot.capacity.toString())
@@ -114,12 +122,28 @@ export default function AdminDashboard() {
     const [settings, setSettings] = useState<SystemSetting[]>([])
     const [loadingSettings, setLoadingSettings] = useState(false)
 
+    // Operation Logs
+    const [logs, setLogs] = useState<OperationLog[]>([])
+    const [loadingLogs, setLoadingLogs] = useState(false)
+
     // Reset Dialog
     const [resetConfirmation, setResetConfirmation] = useState('')
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
     const [resetting, setResetting] = useState(false)
 
     // --- Data Fetching ---
+
+    const fetchLogs = async () => {
+        setLoadingLogs(true)
+        const { data, error } = await supabase
+            .from('operation_logs')
+            .select('*')
+            .order('performed_at', { ascending: false })
+            .limit(100)
+        if (error) toast.error('ログ取得失敗: ' + error.message)
+        else setLogs((data as OperationLog[]) || [])
+        setLoadingLogs(false)
+    }
 
 
     const fetchProjects = async () => {
@@ -186,6 +210,7 @@ export default function AdminDashboard() {
         fetchProjects()
         fetchFpProjects()
         fetchSettings()
+        fetchLogs()
     }, [])
 
     const [now, setNow] = useState(Date.now())
@@ -305,17 +330,18 @@ export default function AdminDashboard() {
         <div className="max-w-6xl mx-auto space-y-8">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold">システム管理</h1>
-                <Button variant="outline" size="icon" onClick={() => { fetchProjects(); fetchFpProjects(); fetchSettings(); }}>
+                <Button variant="outline" size="icon" onClick={() => { fetchProjects(); fetchFpProjects(); fetchSettings(); fetchLogs(); }}>
                     <RefreshCcw className="h-4 w-4" />
                 </Button>
             </div>
 
             <Tabs defaultValue="news" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-5 h-auto">
+                <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-6 h-auto">
                     <TabsTrigger value="news">お知らせ</TabsTrigger>
                     <TabsTrigger value="congestion">混雑管理</TabsTrigger>
                     <TabsTrigger value="fastpass">整理券(FP)</TabsTrigger>
                     <TabsTrigger value="settings">システム設定</TabsTrigger>
+                    <TabsTrigger value="logs">操作ログ</TabsTrigger>
                     <TabsTrigger value="danger" className="text-red-500">危険</TabsTrigger>
                 </TabsList>
 
@@ -574,6 +600,65 @@ export default function AdminDashboard() {
                                         </div>
                                     ))}
                                     {settings.length === 0 && <div className="text-muted-foreground">設定が見つかりません</div>}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* --- LOGS TAB --- */}
+                <TabsContent value="logs" className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center"><RefreshCcw className="mr-2 h-5 w-5" /> 操作ログ (監査履歴)</CardTitle>
+                            <CardDescription>運営者および管理者による操作履歴の直近100件を表示します。</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {loadingLogs ? <LoadingSpinner /> : (
+                                <div className="rounded-md border max-h-[600px] overflow-auto">
+                                    <table className="w-full text-sm text-left relative">
+                                        <thead className="bg-muted text-muted-foreground sticky top-0 z-10">
+                                            <tr>
+                                                <th className="p-3 font-medium">日時</th>
+                                                <th className="p-3 font-medium">操作主体</th>
+                                                <th className="p-3 font-medium">アクション</th>
+                                                <th className="p-3 font-medium">詳細データ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {logs.map((log) => (
+                                                <tr key={log.log_id} className="border-t hover:bg-muted/50">
+                                                    <td className="p-3 font-mono text-xs whitespace-nowrap">
+                                                        {new Date(log.performed_at).toLocaleString('ja-JP', {
+                                                            month: 'numeric',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                            second: '2-digit'
+                                                        })}
+                                                    </td>
+                                                    <td className="p-3 font-mono text-xs">
+                                                        {log.operator_id || 'システム/管理者'}
+                                                    </td>
+                                                    <td className="p-3 font-semibold text-xs">
+                                                        <span className="inline-block px-2 py-0.5 rounded bg-muted">
+                                                            {log.action}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-3 font-mono text-xs max-w-md truncate text-muted-foreground">
+                                                        {log.details ? JSON.stringify(log.details) : '-'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {logs.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                                                        操作ログがありません
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
                         </CardContent>
