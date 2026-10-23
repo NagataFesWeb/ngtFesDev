@@ -1,6 +1,12 @@
 # Vercel デプロイ・運用完全マニュアル (Windows/CLI対応)
 
 ## 0. 事前準備 (Windowsユーザー向け)
+Node.jsは **22.23.4以上の22系**を使用します。`.nvmrc` / `.node-version` と `package.json` の `engines.node` を揃えてあります。`npm run build` の前処理が実際の版をログへ出力し、2026年10月21日のセキュリティ修正より古い版なら停止します。
+
+Vercelは `engines.node` に対応する22系の最新パッチを選択します。ローカル設定を変えるだけでは既存の本番デプロイの更新確認にはなりません。更新後は本番を再デプロイし、Build Logsの `Node.js security baseline verified: v22.23.4`（または後続22系）とREADY状態を確認してください。実行環境のパッチ配布はVercelが管理するため、本番の実測ログを確認するまで「本番更新済み」とは扱いません。
+
+公式資料: https://nodejs.org/en/blog/vulnerability/october-2026-security-releases / https://vercel.com/docs/functions/runtimes/node-js/node-js-versions
+
 コマンドプロンプト、PowerShell、または VS Code のターミナルを使用します。
 Vercel CLI が未インストールの場合は以下を実行してください。
 $ npm i -g vercel
