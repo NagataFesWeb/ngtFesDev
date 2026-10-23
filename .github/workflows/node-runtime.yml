@@ -1,0 +1,33 @@
+name: Verify secure Node.js runtime
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: node-security-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          check-latest: true
+          cache: npm
+      - run: node --version
+      - run: npm ci
+      - run: npm test -- --maxWorkers=2 --minWorkers=1
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-not-a-secret
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-not-a-secret
+          CIRCLE_NODE_TOTAL: '3'
+          NEXT_TELEMETRY_DISABLED: '1'
+      - run: npm run type-check

@@ -2,7 +2,14 @@
   "name": "test-web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "^22.23.4"
+  },
   "scripts": {
+    "preinstall": "node scripts/check-node.cjs",
+    "predev": "node scripts/check-node.cjs",
+    "prebuild": "node scripts/check-node.cjs",
+    "prestart": "node scripts/check-node.cjs",
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
